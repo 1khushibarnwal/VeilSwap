@@ -1,8 +1,10 @@
-# [PROJECT_NAME]
+<img width="25" height="25" alt="image" src="https://github.com/user-attachments/assets/c15dec63-ba1c-41fb-a061-db55a83b1449" />
+
+# Veil Swap
 
 **MEV-Resistant Intent-Based Trading Protocol on Arbitrum**
 
-[PROJECT_NAME] is a decentralized limit order protocol that uses a commit-reveal scheme and Uniswap V3 TWAP oracles to let users place private, manipulation-resistant trade intents — executed by keepers only when real on-chain price conditions are met.
+`Veil Swap` is a decentralized limit order protocol that uses a commit-reveal scheme and Uniswap V3 TWAP oracles to let users place private, manipulation-resistant trade intents — executed by keepers only when real on-chain price conditions are met.
 
 **Deployed Status:** 🚧 Deployed on Arbitrum Sepolia Testnet  
 **Solidity:** `^0.8.20` — Foundry project  
@@ -179,12 +181,11 @@ sequenceDiagram
 
 ## Smart Contracts
 
-| Contract           | Address (Arbitrum Sepolia)       | Purpose                                       | Status            |
-| ------------------ | -------------------------------- | --------------------------------------------- | ----------------- |
-| IntentRegistry     | `[PLACEHOLDER — deploy address]` | Commit-reveal, execution gating, fund custody | 🚧 Deploy pending |
-| MockERC20 (TokenA) | `[PLACEHOLDER]`                  | Demo token for testnet                        | 🚧 Deploy pending |
-| MockERC20 (TokenB) | `[PLACEHOLDER]`                  | Demo token for testnet                        | 🚧 Deploy pending |
-| Uniswap V3 Pool    | `[PLACEHOLDER]`                  | TWAP oracle for the demo pair                 | 🚧 Post-deploy    |
+| Contract           | Address (Arbitrum Sepolia)                   | Purpose                                       | Status      |
+| ------------------ | -------------------------------------------- | --------------------------------------------- | ----------- |
+| IntentRegistry     | `0x28d9962792169f9dEC7FA9fcd0Ef348954553f06` | Commit-reveal, execution gating, fund custody | ✅ Deployed |
+| MockERC20 (TokenA) | `0x121872eFfbcEDdD41d1E9Ae25Dcf16dc0C8b6650` | Demo token for testnet                        | ✅ Deployed |
+| MockERC20 (TokenB) | `0xB8101132fa8a75d996476327EF56F5e5d7be40A0` | Demo token for testnet                        | ✅ Deployed |
 
 **Network:** Arbitrum Sepolia Testnet  
 **Chain ID:** `421614`  

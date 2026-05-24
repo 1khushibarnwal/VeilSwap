@@ -50,7 +50,12 @@ import {TickMath} from "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import {OracleLibraryWrapper, MockUniswapV3Pool, OracleLibraryBase} from "./OracleLibraryTest.t.sol";
 import {IntentRegistryBase} from "./IntentRegistryBase.sol";
 import {HarnessIntentRegistry, MockERC20} from "./Mocks.sol";
-import {MockPositionManager, MockUniswapV3Factory, MockUniswapV3Pool as DeployMockPool, DeployAllHelper} from "./DeployAllTest.t.sol";
+import {
+    MockPositionManager,
+    MockUniswapV3Factory,
+    MockUniswapV3Pool as DeployMockPool,
+    DeployAllHelper
+} from "./DeployAllTest.t.sol";
 import {FullMockPool} from "./OracleBranchesTest.t.sol";
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -79,12 +84,7 @@ contract OracleLibrarySrcBranchTest is OracleLibraryBase {
 
     /// ELSE branch, reversed with large amount → non-zero output
     function test_src_getQuote_elseBranch_reversed_largeAmount() public view {
-        uint256 q = oracle.getQuoteAtTick(
-            HIGH_TICK,
-            type(uint128).max,
-            addrB,
-            addrA
-        );
+        uint256 q = oracle.getQuoteAtTick(HIGH_TICK, type(uint128).max, addrB, addrA);
         assertGt(q, 0, "large amount prevents rounding to zero");
     }
 
@@ -146,7 +146,7 @@ contract OracleLibrarySrcBranchTest is OracleLibraryBase {
         pool.pushObservation(now32 - 10, 0, 0, true); // index 0
         pool.pushObservation(now32, 100, uint160(1) << 32, true); // index 1
 
-        (int24 tick, ) = oracle.getBlockStartingTickAndLiquidity(address(pool));
+        (int24 tick,) = oracle.getBlockStartingTickAndLiquidity(address(pool));
         assertEq(tick, 10);
     }
 
@@ -156,9 +156,7 @@ contract OracleLibrarySrcBranchTest is OracleLibraryBase {
         pool.setLiquidity(77);
         pool.pushObservation(uint32(block.timestamp) - 5, 0, 0, true);
 
-        (int24 tick, uint128 liq) = oracle.getBlockStartingTickAndLiquidity(
-            address(pool)
-        );
+        (int24 tick, uint128 liq) = oracle.getBlockStartingTickAndLiquidity(address(pool));
         assertEq(tick, 42);
         assertEq(liq, 77);
     }
@@ -178,17 +176,16 @@ contract FailingToken {
     function mint(address to, uint256 amount) external {
         balanceOf[to] += amount;
     }
+
     function approve(address s, uint256 a) external returns (bool) {
         allowance[msg.sender][s] = a;
         return true;
     }
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) external pure returns (bool) {
+
+    function transferFrom(address, address, uint256) external pure returns (bool) {
         return false;
     }
+
     function transfer(address, uint256) external pure returns (bool) {
         return false;
     }
@@ -228,25 +225,14 @@ contract IntentRegistrySrcBranchTest is IntentRegistryBase {
 
         vm.prank(USER);
         registry.revealIntent(
-            0,
-            address(failToken),
-            address(tokenOut),
-            AMOUNT_IN,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            secret
+            0, address(failToken), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, secret
         );
 
         failToken.mint(USER, AMOUNT_IN);
         vm.prank(USER);
         failToken.approve(address(registry), type(uint256).max);
 
-        vm.expectRevert(
-            IntentRegistry
-                .IntentRegistry__TransferInDepositIntentFailed
-                .selector
-        );
+        vm.expectRevert(IntentRegistry.IntentRegistry__TransferInDepositIntentFailed.selector);
         vm.prank(USER);
         registry.depositIntentFunds(0);
     }
@@ -337,33 +323,24 @@ contract ForceHarness is IntentRegistry {
         intents[id].deposited = true;
     }
 
-    function executeIntentWithMockPrice(
-        uint256 intentId,
-        uint256 mockCurrentPrice
-    ) external {
+    function executeIntentWithMockPrice(uint256 intentId, uint256 mockCurrentPrice) external {
         TradeIntent storage intent = intents[intentId];
         if (!intent.revealed) revert IntentRegistry__IntentNotRevealed();
         if (intent.executed) revert IntentRegistry__AlreadyExecuted();
-        if (block.timestamp > intent.expiry)
+        if (block.timestamp > intent.expiry) {
             revert IntentRegistry__IntentExpired();
+        }
         address p = tokenPairPool[intent.tokenIn][intent.tokenOut];
         if (p == address(0)) revert IntentRegistry__PoolNotRegistered();
-        bool conditionMet = intent.greaterThan
-            ? mockCurrentPrice >= intent.targetPrice
-            : mockCurrentPrice <= intent.targetPrice;
+        bool conditionMet =
+            intent.greaterThan ? mockCurrentPrice >= intent.targetPrice : mockCurrentPrice <= intent.targetPrice;
         if (!conditionMet) revert IntentRegistry__PriceConditionNotMet();
         intent.executed = true;
         IERC20Minimal(intent.tokenIn).approve(address(ROUTER), intent.amountIn);
         address[] memory path = new address[](2);
         path[0] = intent.tokenIn;
         path[1] = intent.tokenOut;
-        ROUTER.swapExactTokensForTokens(
-            intent.amountIn,
-            intent.minAmountOut,
-            path,
-            intent.user,
-            block.timestamp + 300
-        );
+        ROUTER.swapExactTokensForTokens(intent.amountIn, intent.minAmountOut, path, intent.user, block.timestamp + 300);
         IERC20Minimal(intent.tokenIn).approve(address(ROUTER), 0);
         emit IntentExecuted(intentId, mockCurrentPrice);
     }
@@ -422,10 +399,7 @@ contract IntentRegistrySrcBranchTestV2 is Test {
         uint256 exp,
         bytes32 sec
     ) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(u, tIn, tOut, amt, price, minOut, gt, exp, sec)
-            );
+        return keccak256(abi.encodePacked(u, tIn, tOut, amt, price, minOut, gt, exp, sec));
     }
 
     // ── BR-1 in src/IntentRegistry.sol ───────────────────────────────────────
@@ -434,15 +408,7 @@ contract IntentRegistrySrcBranchTestV2 is Test {
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
-            USER,
-            address(failToken),
-            address(tokenOut),
-            AMOUNT_IN,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            expiry,
-            secret
+            USER, address(failToken), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, secret
         );
 
         vm.prank(USER);
@@ -450,25 +416,14 @@ contract IntentRegistrySrcBranchTestV2 is Test {
 
         vm.prank(USER);
         registry.revealIntent(
-            0,
-            address(failToken),
-            address(tokenOut),
-            AMOUNT_IN,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            secret
+            0, address(failToken), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, secret
         );
 
         failToken.mint(USER, AMOUNT_IN);
         vm.prank(USER);
         failToken.approve(address(registry), type(uint256).max);
 
-        vm.expectRevert(
-            IntentRegistry
-                .IntentRegistry__TransferInDepositIntentFailed
-                .selector
-        );
+        vm.expectRevert(IntentRegistry.IntentRegistry__TransferInDepositIntentFailed.selector);
         vm.prank(USER);
         registry.depositIntentFunds(0);
     }
@@ -493,15 +448,7 @@ contract IntentRegistrySrcBranchTestV2 is Test {
         uint256 expiry = block.timestamp + 1 hours;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
-            USER,
-            address(failToken),
-            address(tokenOut),
-            AMOUNT_IN,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            expiry,
-            secret
+            USER, address(failToken), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, secret
         );
 
         vm.prank(USER);
@@ -509,14 +456,7 @@ contract IntentRegistrySrcBranchTestV2 is Test {
 
         vm.prank(USER);
         registry.revealIntent(
-            0,
-            address(failToken),
-            address(tokenOut),
-            AMOUNT_IN,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            secret
+            0, address(failToken), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, secret
         );
 
         // Set deposited = true without calling transferFrom
@@ -524,9 +464,7 @@ contract IntentRegistrySrcBranchTestV2 is Test {
 
         vm.warp(expiry + 1);
 
-        vm.expectRevert(
-            IntentRegistry.IntentRegistry__CancelTransferFailed.selector
-        );
+        vm.expectRevert(IntentRegistry.IntentRegistry__CancelTransferFailed.selector);
         vm.prank(USER);
         registry.cancelIntent(0);
     }
@@ -534,13 +472,11 @@ contract IntentRegistrySrcBranchTestV2 is Test {
 
 // Minimal router stub — does nothing, never reverts
 contract StubRouter {
-    function swapExactTokensForTokens(
-        uint256,
-        uint256,
-        address[] calldata,
-        address,
-        uint256
-    ) external pure returns (uint256[] memory amounts) {
+    function swapExactTokensForTokens(uint256, uint256, address[] calldata, address, uint256)
+        external
+        pure
+        returns (uint256[] memory amounts)
+    {
         amounts = new uint256[](2);
     }
 }
@@ -719,7 +655,7 @@ contract FullMockPoolCoverageTest is Test {
 
     function test_setObservation_uninitializedSlot() public {
         pool.setObservation(3, 500, 0, 0, false);
-        (, , , bool init) = pool.observations(3);
+        (,,, bool init) = pool.observations(3);
         assertFalse(init);
     }
 
@@ -727,7 +663,7 @@ contract FullMockPoolCoverageTest is Test {
         pool.setObservation(0, 0, 10, 0, true);
         pool.setObservation(1, 0, 20, 0, true);
         uint32[] memory dummy = new uint32[](2);
-        (int56[] memory tc, ) = pool.observe(dummy);
+        (int56[] memory tc,) = pool.observe(dummy);
         assertEq(tc[0], 10);
         assertEq(tc[1], 20);
     }
@@ -739,7 +675,7 @@ contract FullMockPoolCoverageTest is Test {
 
     function test_slot0_returnsAllFields() public {
         pool.setSlot0(42, 1, 3);
-        (, int24 tick, uint16 idx, uint16 card, , , ) = pool.slot0();
+        (, int24 tick, uint16 idx, uint16 card,,,) = pool.slot0();
         assertEq(tick, 42);
         assertEq(idx, 1);
         assertEq(card, 3);

@@ -9,17 +9,9 @@ import {IntentRegistry} from "../src/IntentRegistry.sol";
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface IUniswapV3Factory {
-    function createPool(
-        address tokenA,
-        address tokenB,
-        uint24 fee
-    ) external returns (address pool);
+    function createPool(address tokenA, address tokenB, uint24 fee) external returns (address pool);
 
-    function getPool(
-        address tokenA,
-        address tokenB,
-        uint24 fee
-    ) external view returns (address pool);
+    function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address pool);
 }
 
 interface IUniswapV3Pool {
@@ -43,16 +35,9 @@ interface INonfungiblePositionManager {
         uint256 deadline;
     }
 
-    function mint(
-        MintParams calldata params
-    )
+    function mint(MintParams calldata params)
         external
-        returns (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        );
+        returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
 }
 
 interface IMockERC20 {
@@ -79,11 +64,7 @@ contract MockERC20 {
     mapping(address => mapping(address => uint256)) public allowance;
 
     event Transfer(address indexed from, address indexed to, uint256 amount);
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 amount
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 amount);
 
     constructor(string memory _name, string memory _symbol, uint8 _decimals) {
         name = _name;
@@ -114,11 +95,7 @@ contract MockERC20 {
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (bool) {
+    function transferFrom(address from, address to, uint256 amount) external returns (bool) {
         if (balanceOf[from] < amount) {
             revert ERC20__InsufficientBalance();
         }
@@ -159,12 +136,9 @@ contract DeployAll is Script {
     // ── Arbitrum Sepolia — Uniswap V3 infrastructure ─────────────────────────
     // These are the REAL Uniswap V3 contracts on Arbitrum Sepolia.
     // No mocks — the oracle and router are the genuine article.
-    address internal constant UNISWAP_V3_FACTORY =
-        0x248AB79Bbb9bC29bB72f7Cd42F17e054Fc40188e;
-    address internal constant SWAP_ROUTER =
-        0x101F443B4d1b059569D643917553c771E1b9663E;
-    address internal constant POSITION_MANAGER =
-        0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65;
+    address internal constant UNISWAP_V3_FACTORY = 0x248AB79Bbb9bC29bB72f7Cd42F17e054Fc40188e;
+    address internal constant SWAP_ROUTER = 0x101F443B4d1b059569D643917553c771E1b9663E;
+    address internal constant POSITION_MANAGER = 0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65;
 
     // ── Pool parameters ───────────────────────────────────────────────────────
     uint24 internal constant FEE = 3000; // 0.3%
@@ -221,19 +195,11 @@ contract DeployAll is Script {
         // ── Step 4: Create the Uniswap V3 pool ───────────────────────────────
         // getPool first — if a pool already exists for this pair+fee on this
         // run's fork, createPool would revert. Safe to check.
-        address existingPool = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
-            address(mockWeth),
-            address(mockUsdc),
-            FEE
-        );
+        address existingPool = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(address(mockWeth), address(mockUsdc), FEE);
 
         address pool;
         if (existingPool == address(0)) {
-            pool = IUniswapV3Factory(UNISWAP_V3_FACTORY).createPool(
-                address(mockWeth),
-                address(mockUsdc),
-                FEE
-            );
+            pool = IUniswapV3Factory(UNISWAP_V3_FACTORY).createPool(address(mockWeth), address(mockUsdc), FEE);
             console.log("Step 4/9 | Uniswap V3 pool created:", pool);
         } else {
             pool = existingPool;
@@ -277,31 +243,28 @@ contract DeployAll is Script {
 
         bool wethIsToken0 = (token0 == address(mockWeth));
 
-        uint256 amount0Desired = wethIsToken0
-            ? LIQUIDITY_AMOUNT_WETH
-            : LIQUIDITY_AMOUNT_USDC;
-        uint256 amount1Desired = wethIsToken0
-            ? LIQUIDITY_AMOUNT_USDC
-            : LIQUIDITY_AMOUNT_WETH;
+        uint256 amount0Desired = wethIsToken0 ? LIQUIDITY_AMOUNT_WETH : LIQUIDITY_AMOUNT_USDC;
+        uint256 amount1Desired = wethIsToken0 ? LIQUIDITY_AMOUNT_USDC : LIQUIDITY_AMOUNT_WETH;
 
         // Mint a full-range position so the TWAP has observation history
         // across the entire tick range — no risk of the price going out of range
         // during the 30-minute warm-up window before the demo.
-        INonfungiblePositionManager(POSITION_MANAGER).mint(
-            INonfungiblePositionManager.MintParams({
-                token0: token0,
-                token1: token1,
-                fee: FEE,
-                tickLower: TICK_LOWER,
-                tickUpper: TICK_UPPER,
-                amount0Desired: amount0Desired,
-                amount1Desired: amount1Desired,
-                amount0Min: 0, // no slippage protection needed on testnet
-                amount1Min: 0,
-                recipient: deployer,
-                deadline: block.timestamp + 600
-            })
-        );
+        INonfungiblePositionManager(POSITION_MANAGER)
+            .mint(
+                INonfungiblePositionManager.MintParams({
+                    token0: token0,
+                    token1: token1,
+                    fee: FEE,
+                    tickLower: TICK_LOWER,
+                    tickUpper: TICK_UPPER,
+                    amount0Desired: amount0Desired,
+                    amount1Desired: amount1Desired,
+                    amount0Min: 0, // no slippage protection needed on testnet
+                    amount1Min: 0,
+                    recipient: deployer,
+                    deadline: block.timestamp + 600
+                })
+            );
 
         console.log("Step 8/9 | Full-range liquidity added:");
         console.log("         |   token0:", token0);
