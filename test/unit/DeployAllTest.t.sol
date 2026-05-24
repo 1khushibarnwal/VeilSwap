@@ -23,7 +23,11 @@ contract MockUniswapV3Pool {
         }
     }
 
-    function initialize(uint160 /* sqrtPriceX96 */) external {
+    function initialize(
+        uint160 /* sqrtPriceX96 */
+    )
+        external
+    {
         require(!initialized, "Already initialized");
         initialized = true;
     }
@@ -33,27 +37,18 @@ contract MockUniswapV3Pool {
 // MockUniswapV3Factory
 // ─────────────────────────────────────────────────────────────────────────────
 contract MockUniswapV3Factory {
-    mapping(address => mapping(address => mapping(uint24 => address)))
-        public pools;
+    mapping(address => mapping(address => mapping(uint24 => address))) public pools;
 
     function setPool(address a, address b, uint24 fee, address pool) external {
         pools[a][b][fee] = pool;
         pools[b][a][fee] = pool;
     }
 
-    function getPool(
-        address a,
-        address b,
-        uint24 fee
-    ) external view returns (address) {
+    function getPool(address a, address b, uint24 fee) external view returns (address) {
         return pools[a][b][fee];
     }
 
-    function createPool(
-        address a,
-        address b,
-        uint24 fee
-    ) external returns (address pool) {
+    function createPool(address a, address b, uint24 fee) external returns (address pool) {
         require(pools[a][b][fee] == address(0), "Pool already exists");
         pool = address(new MockUniswapV3Pool(a, b));
         pools[a][b][fee] = pool;
@@ -89,33 +84,18 @@ contract MockPositionManager {
         return _lastMintParams;
     }
 
-    function mint(
-        MintParams calldata params
-    )
+    function mint(MintParams calldata params)
         external
-        returns (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        )
+        returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
     {
         _lastMintParams = params;
         mintCalled = true;
-        bool ok0 = MockERC20(params.token0).transferFrom(
-            msg.sender,
-            address(this),
-            params.amount0Desired
-        );
+        bool ok0 = MockERC20(params.token0).transferFrom(msg.sender, address(this), params.amount0Desired);
         if (!ok0) {
             revert MockPositionManager__Token0TransferFailed();
         }
 
-        bool ok1 = MockERC20(params.token1).transferFrom(
-            msg.sender,
-            address(this),
-            params.amount1Desired
-        );
+        bool ok1 = MockERC20(params.token1).transferFrom(msg.sender, address(this), params.amount1Desired);
         if (!ok1) {
             revert MockPositionManager__Token1TransferFailed();
         }
@@ -149,12 +129,7 @@ contract DeployAllHelper {
     IntentRegistry public registry;
     address public pool;
 
-    function deploy(
-        address swapRouter,
-        address factory,
-        address positionManager,
-        address deployer
-    ) external {
+    function deploy(address swapRouter, address factory, address positionManager, address deployer) external {
         // Step 1 & 2: Deploy mock tokens
         mockWeth = new MockERC20("Mock Wrapped Ether", "mWETH", 18);
         mockUsdc = new MockERC20("Mock USD Coin", "mUSDC", 6);
@@ -174,32 +149,16 @@ contract DeployAllHelper {
     /// @dev Re-runs only the pool + liquidity steps on an already-deployed
     ///      helper. Used by test_deploy_reusesExistingPool_whenAlreadyDeployed
     ///      to exercise the existing-pool branch without changing token addresses.
-    function deployAgain(
-        address factory,
-        address positionManager,
-        address deployer
-    ) external {
+    function deployAgain(address factory, address positionManager, address deployer) external {
         _deployPoolAndLiquidity(factory, positionManager, deployer);
     }
 
-    function _deployPoolAndLiquidity(
-        address factory,
-        address positionManager,
-        address deployer
-    ) internal {
+    function _deployPoolAndLiquidity(address factory, address positionManager, address deployer) internal {
         // Step 4: Create pool (idempotent)
-        address existingPool = MockUniswapV3Factory(factory).getPool(
-            address(mockWeth),
-            address(mockUsdc),
-            FEE
-        );
+        address existingPool = MockUniswapV3Factory(factory).getPool(address(mockWeth), address(mockUsdc), FEE);
 
         if (existingPool == address(0)) {
-            pool = MockUniswapV3Factory(factory).createPool(
-                address(mockWeth),
-                address(mockUsdc),
-                FEE
-            );
+            pool = MockUniswapV3Factory(factory).createPool(address(mockWeth), address(mockUsdc), FEE);
         } else {
             pool = existingPool;
         }
@@ -220,28 +179,25 @@ contract DeployAllHelper {
         address token1 = MockUniswapV3Pool(pool).token1();
 
         bool wethIsToken0 = (token0 == address(mockWeth));
-        uint256 amount0Desired = wethIsToken0
-            ? LIQUIDITY_AMOUNT_WETH
-            : LIQUIDITY_AMOUNT_USDC;
-        uint256 amount1Desired = wethIsToken0
-            ? LIQUIDITY_AMOUNT_USDC
-            : LIQUIDITY_AMOUNT_WETH;
+        uint256 amount0Desired = wethIsToken0 ? LIQUIDITY_AMOUNT_WETH : LIQUIDITY_AMOUNT_USDC;
+        uint256 amount1Desired = wethIsToken0 ? LIQUIDITY_AMOUNT_USDC : LIQUIDITY_AMOUNT_WETH;
 
-        MockPositionManager(positionManager).mint(
-            MockPositionManager.MintParams({
-                token0: token0,
-                token1: token1,
-                fee: FEE,
-                tickLower: TICK_LOWER,
-                tickUpper: TICK_UPPER,
-                amount0Desired: amount0Desired,
-                amount1Desired: amount1Desired,
-                amount0Min: 0,
-                amount1Min: 0,
-                recipient: deployer,
-                deadline: block.timestamp + 600
-            })
-        );
+        MockPositionManager(positionManager)
+            .mint(
+                MockPositionManager.MintParams({
+                    token0: token0,
+                    token1: token1,
+                    fee: FEE,
+                    tickLower: TICK_LOWER,
+                    tickUpper: TICK_UPPER,
+                    amount0Desired: amount0Desired,
+                    amount1Desired: amount1Desired,
+                    amount0Min: 0,
+                    amount1Min: 0,
+                    recipient: deployer,
+                    deadline: block.timestamp + 600
+                })
+            );
 
         // Step 9: Register pool in IntentRegistry (skip on re-run if registry exists)
         if (address(registry) != address(0)) {
@@ -275,12 +231,7 @@ contract DeployAllTest is Test {
         // so anything helper calls internally would see msg.sender = helper,
         // causing CONTRACT_OWNER to be address(helper) instead of DEPLOYER.
         vm.startPrank(DEPLOYER);
-        helper.deploy(
-            SWAP_ROUTER,
-            address(factory),
-            address(positionManager),
-            DEPLOYER
-        );
+        helper.deploy(SWAP_ROUTER, address(factory), address(positionManager), DEPLOYER);
         vm.stopPrank();
     }
 
@@ -374,9 +325,7 @@ contract DeployAllTest is Test {
         token.transfer(address(0xA), 101);
     }
 
-    function test_mockERC20_transferFrom_movesBalanceAndDeductsAllowance()
-        public
-    {
+    function test_mockERC20_transferFrom_movesBalanceAndDeductsAllowance() public {
         MockERC20 token = new MockERC20("T", "T", 18);
         token.mint(address(0xA), 1000);
         vm.prank(address(0xA));
@@ -399,9 +348,7 @@ contract DeployAllTest is Test {
         token.transferFrom(address(0xA), address(0xB), 101);
     }
 
-    function test_mockERC20_transferFrom_revertsIfInsufficientAllowance()
-        public
-    {
+    function test_mockERC20_transferFrom_revertsIfInsufficientAllowance() public {
         MockERC20 token = new MockERC20("T", "T", 18);
         token.mint(address(0xA), 1000);
         vm.prank(address(0xA));
@@ -484,11 +431,7 @@ contract DeployAllTest is Test {
 
         // Second run on the same helper — same token addresses → reuse path.
         vm.startPrank(DEPLOYER);
-        helper.deployAgain(
-            address(factory),
-            address(positionManager),
-            DEPLOYER
-        );
+        helper.deployAgain(address(factory), address(positionManager), DEPLOYER);
         vm.stopPrank();
 
         assertEq(helper.pool(), pool1, "pool must be reused, not recreated");
@@ -509,12 +452,7 @@ contract DeployAllTest is Test {
 
         DeployAllHelper helper2 = new DeployAllHelper();
         vm.prank(DEPLOYER);
-        helper2.deploy(
-            SWAP_ROUTER,
-            address(factory),
-            address(positionManager),
-            DEPLOYER
-        );
+        helper2.deploy(SWAP_ROUTER, address(factory), address(positionManager), DEPLOYER);
 
         assertTrue(MockUniswapV3Pool(pool1).initialized());
     }
@@ -539,19 +477,13 @@ contract DeployAllTest is Test {
 
     function test_deploy_positionManagerIsApprovedForWETH() public {
         _deploy();
-        uint256 allowance = helper.mockWeth().allowance(
-            address(helper),
-            address(positionManager)
-        );
+        uint256 allowance = helper.mockWeth().allowance(address(helper), address(positionManager));
         assertGt(allowance, 0);
     }
 
     function test_deploy_positionManagerIsApprovedForUSDC() public {
         _deploy();
-        uint256 allowance = helper.mockUsdc().allowance(
-            address(helper),
-            address(positionManager)
-        );
+        uint256 allowance = helper.mockUsdc().allowance(address(helper), address(positionManager));
         assertGt(allowance, 0);
     }
 
@@ -561,18 +493,14 @@ contract DeployAllTest is Test {
 
     function test_deploy_liquidityMint_usesCorrectTokenOrdering() public {
         _deploy();
-        MockPositionManager.MintParams memory p = positionManager
-            .getLastMintParams();
+        MockPositionManager.MintParams memory p = positionManager.getLastMintParams();
         assertEq(p.token0, MockUniswapV3Pool(helper.pool()).token0());
         assertEq(p.token1, MockUniswapV3Pool(helper.pool()).token1());
     }
 
-    function test_deploy_liquidityMint_usesCorrectAmounts_wethIsToken0()
-        public
-    {
+    function test_deploy_liquidityMint_usesCorrectAmounts_wethIsToken0() public {
         _deploy();
-        MockPositionManager.MintParams memory p = positionManager
-            .getLastMintParams();
+        MockPositionManager.MintParams memory p = positionManager.getLastMintParams();
         address poolToken0 = MockUniswapV3Pool(helper.pool()).token0();
         bool wethIsToken0 = (poolToken0 == address(helper.mockWeth()));
 
@@ -587,38 +515,33 @@ contract DeployAllTest is Test {
 
     function test_deploy_liquidityMint_usesCorrectTickRange() public {
         _deploy();
-        MockPositionManager.MintParams memory p = positionManager
-            .getLastMintParams();
+        MockPositionManager.MintParams memory p = positionManager.getLastMintParams();
         assertEq(p.tickLower, helper.TICK_LOWER());
         assertEq(p.tickUpper, helper.TICK_UPPER());
     }
 
     function test_deploy_liquidityMint_usesCorrectFee() public {
         _deploy();
-        MockPositionManager.MintParams memory p = positionManager
-            .getLastMintParams();
+        MockPositionManager.MintParams memory p = positionManager.getLastMintParams();
         assertEq(p.fee, helper.FEE());
     }
 
     function test_deploy_liquidityMint_recipientIsDeployer() public {
         _deploy();
-        MockPositionManager.MintParams memory p = positionManager
-            .getLastMintParams();
+        MockPositionManager.MintParams memory p = positionManager.getLastMintParams();
         assertEq(p.recipient, DEPLOYER);
     }
 
     function test_deploy_liquidityMint_zeroSlippageMinimums() public {
         _deploy();
-        MockPositionManager.MintParams memory p = positionManager
-            .getLastMintParams();
+        MockPositionManager.MintParams memory p = positionManager.getLastMintParams();
         assertEq(p.amount0Min, 0);
         assertEq(p.amount1Min, 0);
     }
 
     function test_deploy_liquidityMint_deadlineIsInFuture() public {
         _deploy();
-        MockPositionManager.MintParams memory p = positionManager
-            .getLastMintParams();
+        MockPositionManager.MintParams memory p = positionManager.getLastMintParams();
         assertGt(p.deadline, block.timestamp);
     }
 
@@ -633,33 +556,20 @@ contract DeployAllTest is Test {
 
     function test_deploy_registry_poolRegistered_wethToUsdc() public {
         _deploy();
-        address registered = helper.registry().tokenPairPool(
-            address(helper.mockWeth()),
-            address(helper.mockUsdc())
-        );
+        address registered = helper.registry().tokenPairPool(address(helper.mockWeth()), address(helper.mockUsdc()));
         assertEq(registered, helper.pool());
     }
 
     function test_deploy_registry_poolRegistered_usdcToWeth() public {
         _deploy();
-        address registered = helper.registry().tokenPairPool(
-            address(helper.mockUsdc()),
-            address(helper.mockWeth())
-        );
+        address registered = helper.registry().tokenPairPool(address(helper.mockUsdc()), address(helper.mockWeth()));
         assertEq(registered, helper.pool());
     }
 
     function test_deploy_registry_poolAddressMatchesFactory() public {
         _deploy();
-        address fromRegistry = helper.registry().tokenPairPool(
-            address(helper.mockWeth()),
-            address(helper.mockUsdc())
-        );
-        address fromFactory = factory.getPool(
-            address(helper.mockWeth()),
-            address(helper.mockUsdc()),
-            3000
-        );
+        address fromRegistry = helper.registry().tokenPairPool(address(helper.mockWeth()), address(helper.mockUsdc()));
+        address fromFactory = factory.getPool(address(helper.mockWeth()), address(helper.mockUsdc()), 3000);
         assertEq(fromRegistry, fromFactory);
     }
 
@@ -694,15 +604,7 @@ contract DeployAllTest is Test {
         // owner = msg.sender at submitIntent time = user.
         bytes32 hash = keccak256(
             abi.encodePacked(
-                user,
-                address(weth),
-                address(helper.mockUsdc()),
-                amount,
-                target,
-                uint256(0),
-                true,
-                expiry,
-                secret
+                user, address(weth), address(helper.mockUsdc()), amount, target, uint256(0), true, expiry, secret
             )
         );
 
@@ -710,16 +612,7 @@ contract DeployAllTest is Test {
         // requires msg.sender == intent.owner == user.
         vm.startPrank(user);
         registry.submitIntent(hash, expiry);
-        registry.revealIntent(
-            intentId,
-            address(weth),
-            address(helper.mockUsdc()),
-            amount,
-            target,
-            0,
-            true,
-            secret
-        );
+        registry.revealIntent(intentId, address(weth), address(helper.mockUsdc()), amount, target, 0, true, secret);
         vm.stopPrank();
 
         IntentRegistry.TradeIntent memory intent = registry.getIntent(intentId);
@@ -748,15 +641,7 @@ contract DeployAllTest is Test {
         uint256 intentId = registry.nextIntentId();
         bytes32 hash = keccak256(
             abi.encodePacked(
-                user,
-                address(weth),
-                address(helper.mockUsdc()),
-                amount,
-                target,
-                uint256(0),
-                true,
-                expiry,
-                secret
+                user, address(weth), address(helper.mockUsdc()), amount, target, uint256(0), true, expiry, secret
             )
         );
 
@@ -764,16 +649,7 @@ contract DeployAllTest is Test {
         // revealIntent checks msg.sender == owner, depositIntentFunds likewise.
         vm.startPrank(user);
         registry.submitIntent(hash, expiry);
-        registry.revealIntent(
-            intentId,
-            address(weth),
-            address(helper.mockUsdc()),
-            amount,
-            target,
-            0,
-            true,
-            secret
-        );
+        registry.revealIntent(intentId, address(weth), address(helper.mockUsdc()), amount, target, 0, true, secret);
         registry.depositIntentFunds(intentId);
         vm.stopPrank();
 
@@ -788,9 +664,5 @@ contract DeployAllTest is Test {
     // FIX 2: renamed from MockERC20Transfer/MockERC20Approval → Transfer/Approval.
     // =========================================================================
     event Transfer(address indexed from, address indexed to, uint256 amount);
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 amount
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 amount);
 }

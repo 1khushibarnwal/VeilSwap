@@ -164,7 +164,7 @@ contract DeployAll is Script {
     address internal constant SWAP_ROUTER =
         0x101F443B4d1b059569D643917553c771E1b9663E;
     address internal constant POSITION_MANAGER =
-        0x06B2937bDe17889EdCf8fbd8DE31c3c2A70BC4d7;
+        0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65;
 
     // ── Pool parameters ───────────────────────────────────────────────────────
     uint24 internal constant FEE = 3000; // 0.3%

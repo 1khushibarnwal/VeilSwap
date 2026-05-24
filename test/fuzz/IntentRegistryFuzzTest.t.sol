@@ -36,9 +36,7 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
     }
 
     /// Any timestamp <= now must revert.
-    function testFuzz_submit_rejectsAnyPastOrPresentExpiry(
-        uint256 expiry
-    ) public {
+    function testFuzz_submit_rejectsAnyPastOrPresentExpiry(uint256 expiry) public {
         expiry = bound(expiry, 0, block.timestamp);
 
         vm.expectRevert(IntentRegistry.IntentRegistry__ExpiryPassed.selector);
@@ -51,10 +49,7 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
     // =========================================================================
 
     /// Mutating amountIn causes a hash mismatch.
-    function testFuzz_reveal_tamperedAmountIn_alwaysReverts(
-        uint256 real,
-        uint256 tampered
-    ) public {
+    function testFuzz_reveal_tamperedAmountIn_alwaysReverts(uint256 real, uint256 tampered) public {
         real = bound(real, 1, type(uint128).max);
         tampered = bound(tampered, 1, type(uint128).max);
         vm.assume(real != tampered);
@@ -62,41 +57,21 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
-            USER,
-            address(tokenIn),
-            address(tokenOut),
-            real,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            expiry,
-            secret
+            USER, address(tokenIn), address(tokenOut), real, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, secret
         );
 
         vm.prank(USER);
         registry.submitIntent(hash, expiry);
 
-        vm.expectRevert(
-            IntentRegistry.IntentRegistry__RevealHashMismatch.selector
-        );
+        vm.expectRevert(IntentRegistry.IntentRegistry__RevealHashMismatch.selector);
         vm.prank(USER);
         registry.revealIntent(
-            0,
-            address(tokenIn),
-            address(tokenOut),
-            tampered,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            secret
+            0, address(tokenIn), address(tokenOut), tampered, TARGET_PRICE, MIN_AMOUNT_OUT, true, secret
         );
     }
 
     /// Mutating targetPrice causes a hash mismatch.
-    function testFuzz_reveal_tamperedTargetPrice_alwaysReverts(
-        uint256 real,
-        uint256 tampered
-    ) public {
+    function testFuzz_reveal_tamperedTargetPrice_alwaysReverts(uint256 real, uint256 tampered) public {
         real = bound(real, 1, type(uint128).max);
         tampered = bound(tampered, 1, type(uint128).max);
         vm.assume(real != tampered);
@@ -104,121 +79,57 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
-            USER,
-            address(tokenIn),
-            address(tokenOut),
-            AMOUNT_IN,
-            real,
-            MIN_AMOUNT_OUT,
-            true,
-            expiry,
-            secret
+            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, real, MIN_AMOUNT_OUT, true, expiry, secret
         );
 
         vm.prank(USER);
         registry.submitIntent(hash, expiry);
 
-        vm.expectRevert(
-            IntentRegistry.IntentRegistry__RevealHashMismatch.selector
-        );
+        vm.expectRevert(IntentRegistry.IntentRegistry__RevealHashMismatch.selector);
         vm.prank(USER);
-        registry.revealIntent(
-            0,
-            address(tokenIn),
-            address(tokenOut),
-            AMOUNT_IN,
-            tampered,
-            MIN_AMOUNT_OUT,
-            true,
-            secret
-        );
+        registry.revealIntent(0, address(tokenIn), address(tokenOut), AMOUNT_IN, tampered, MIN_AMOUNT_OUT, true, secret);
     }
 
     /// Mutating minAmountOut causes a hash mismatch (slippage parameter is binding).
-    function testFuzz_reveal_tamperedMinAmountOut_alwaysReverts(
-        uint256 real,
-        uint256 tampered
-    ) public {
+    function testFuzz_reveal_tamperedMinAmountOut_alwaysReverts(uint256 real, uint256 tampered) public {
         real = bound(real, 0, type(uint128).max);
         tampered = bound(tampered, 0, type(uint128).max);
         vm.assume(real != tampered);
 
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
-        bytes32 hash = _buildHash(
-            USER,
-            address(tokenIn),
-            address(tokenOut),
-            AMOUNT_IN,
-            TARGET_PRICE,
-            real,
-            true,
-            expiry,
-            secret
-        );
+        bytes32 hash =
+            _buildHash(USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, real, true, expiry, secret);
 
         vm.prank(USER);
         registry.submitIntent(hash, expiry);
 
-        vm.expectRevert(
-            IntentRegistry.IntentRegistry__RevealHashMismatch.selector
-        );
+        vm.expectRevert(IntentRegistry.IntentRegistry__RevealHashMismatch.selector);
         vm.prank(USER);
-        registry.revealIntent(
-            0,
-            address(tokenIn),
-            address(tokenOut),
-            AMOUNT_IN,
-            TARGET_PRICE,
-            tampered,
-            true,
-            secret
-        );
+        registry.revealIntent(0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, tampered, true, secret);
     }
 
     /// Any wrong secret causes a hash mismatch.
-    function testFuzz_reveal_wrongSecret_alwaysReverts(
-        bytes32 correct,
-        bytes32 wrong
-    ) public {
+    function testFuzz_reveal_wrongSecret_alwaysReverts(bytes32 correct, bytes32 wrong) public {
         vm.assume(correct != wrong);
 
         uint256 expiry = block.timestamp + 1 days;
         bytes32 hash = _buildHash(
-            USER,
-            address(tokenIn),
-            address(tokenOut),
-            AMOUNT_IN,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            expiry,
-            correct
+            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, correct
         );
 
         vm.prank(USER);
         registry.submitIntent(hash, expiry);
 
-        vm.expectRevert(
-            IntentRegistry.IntentRegistry__RevealHashMismatch.selector
-        );
+        vm.expectRevert(IntentRegistry.IntentRegistry__RevealHashMismatch.selector);
         vm.prank(USER);
         registry.revealIntent(
-            0,
-            address(tokenIn),
-            address(tokenOut),
-            AMOUNT_IN,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            wrong
+            0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, wrong
         );
     }
 
     /// Flipping greaterThan causes a hash mismatch.
-    function testFuzz_reveal_flippedGreaterThan_alwaysReverts(
-        bool committed
-    ) public {
+    function testFuzz_reveal_flippedGreaterThan_alwaysReverts(bool committed) public {
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
@@ -236,9 +147,7 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
         vm.prank(USER);
         registry.submitIntent(hash, expiry);
 
-        vm.expectRevert(
-            IntentRegistry.IntentRegistry__RevealHashMismatch.selector
-        );
+        vm.expectRevert(IntentRegistry.IntentRegistry__RevealHashMismatch.selector);
         vm.prank(USER);
         registry.revealIntent(
             0,
@@ -257,26 +166,16 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
     // =========================================================================
 
     /// greaterThan=true: executes iff price >= target (and reverts otherwise).
-    function testFuzz_execute_greaterThan_conditionIsExact(
-        uint256 amountIn,
-        uint256 targetPrice,
-        uint256 currentPrice
-    ) public {
+    function testFuzz_execute_greaterThan_conditionIsExact(uint256 amountIn, uint256 targetPrice, uint256 currentPrice)
+        public
+    {
         amountIn = bound(amountIn, 1, type(uint128).max);
         targetPrice = bound(targetPrice, 1, type(uint128).max);
 
         tokenIn.mint(USER, amountIn);
 
         uint256 expiry = block.timestamp + 1 days;
-        uint256 id = _submitAndReveal(
-            USER,
-            amountIn,
-            targetPrice,
-            0,
-            true,
-            expiry,
-            SECRET
-        );
+        uint256 id = _submitAndReveal(USER, amountIn, targetPrice, 0, true, expiry, SECRET);
         vm.prank(USER);
         registry.depositIntentFunds(id);
 
@@ -285,9 +184,7 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
             registry.executeIntentWithMockPrice(id, currentPrice);
             assertTrue(registry.getIntent(id).executed);
         } else {
-            vm.expectRevert(
-                IntentRegistry.IntentRegistry__PriceConditionNotMet.selector
-            );
+            vm.expectRevert(IntentRegistry.IntentRegistry__PriceConditionNotMet.selector);
             vm.prank(KEEPER);
             registry.executeIntentWithMockPrice(id, currentPrice);
             assertFalse(registry.getIntent(id).executed);
@@ -295,26 +192,16 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
     }
 
     /// greaterThan=false: executes iff price <= target (and reverts otherwise).
-    function testFuzz_execute_lessThan_conditionIsExact(
-        uint256 amountIn,
-        uint256 targetPrice,
-        uint256 currentPrice
-    ) public {
+    function testFuzz_execute_lessThan_conditionIsExact(uint256 amountIn, uint256 targetPrice, uint256 currentPrice)
+        public
+    {
         amountIn = bound(amountIn, 1, type(uint128).max);
         targetPrice = bound(targetPrice, 1, type(uint128).max);
 
         tokenIn.mint(USER, amountIn);
 
         uint256 expiry = block.timestamp + 1 days;
-        uint256 id = _submitAndReveal(
-            USER,
-            amountIn,
-            targetPrice,
-            0,
-            false,
-            expiry,
-            SECRET
-        );
+        uint256 id = _submitAndReveal(USER, amountIn, targetPrice, 0, false, expiry, SECRET);
         vm.prank(USER);
         registry.depositIntentFunds(id);
 
@@ -323,9 +210,7 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
             registry.executeIntentWithMockPrice(id, currentPrice);
             assertTrue(registry.getIntent(id).executed);
         } else {
-            vm.expectRevert(
-                IntentRegistry.IntentRegistry__PriceConditionNotMet.selector
-            );
+            vm.expectRevert(IntentRegistry.IntentRegistry__PriceConditionNotMet.selector);
             vm.prank(KEEPER);
             registry.executeIntentWithMockPrice(id, currentPrice);
             assertFalse(registry.getIntent(id).executed);
@@ -347,15 +232,7 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
         tokenIn.mint(USER, amountIn);
 
         uint256 expiry = block.timestamp + 2 hours;
-        uint256 id = _submitAndReveal(
-            USER,
-            amountIn,
-            TARGET_PRICE,
-            0,
-            true,
-            expiry,
-            SECRET
-        );
+        uint256 id = _submitAndReveal(USER, amountIn, TARGET_PRICE, 0, true, expiry, SECRET);
         vm.prank(USER);
         registry.depositIntentFunds(id);
 
@@ -369,22 +246,12 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
     // P5 — depositIntentFunds: balance delta equals exactly amountIn
     // =========================================================================
 
-    function testFuzz_deposit_balanceDeltaEqualsAmountIn(
-        uint256 amountIn
-    ) public {
+    function testFuzz_deposit_balanceDeltaEqualsAmountIn(uint256 amountIn) public {
         amountIn = bound(amountIn, 1, type(uint128).max);
         tokenIn.mint(USER, amountIn);
 
         uint256 expiry = block.timestamp + 1 days;
-        uint256 id = _submitAndReveal(
-            USER,
-            amountIn,
-            TARGET_PRICE,
-            0,
-            true,
-            expiry,
-            SECRET
-        );
+        uint256 id = _submitAndReveal(USER, amountIn, TARGET_PRICE, 0, true, expiry, SECRET);
 
         uint256 registryBefore = tokenIn.balanceOf(address(registry));
         uint256 userBefore = tokenIn.balanceOf(USER);
@@ -392,10 +259,7 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
         vm.prank(USER);
         registry.depositIntentFunds(id);
 
-        assertEq(
-            tokenIn.balanceOf(address(registry)),
-            registryBefore + amountIn
-        );
+        assertEq(tokenIn.balanceOf(address(registry)), registryBefore + amountIn);
         assertEq(tokenIn.balanceOf(USER), userBefore - amountIn);
     }
 
@@ -403,25 +267,14 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
     // P6 — cancelIntent: post-expiry cancel returns exactly amountIn
     // =========================================================================
 
-    function testFuzz_cancel_postExpiry_refundsExactAmountIn(
-        uint256 amountIn,
-        uint256 secondsAfterExpiry
-    ) public {
+    function testFuzz_cancel_postExpiry_refundsExactAmountIn(uint256 amountIn, uint256 secondsAfterExpiry) public {
         amountIn = bound(amountIn, 1, type(uint128).max);
         secondsAfterExpiry = bound(secondsAfterExpiry, 1, 365 days);
 
         tokenIn.mint(USER, amountIn);
 
         uint256 expiry = block.timestamp + 1 hours;
-        uint256 id = _submitAndReveal(
-            USER,
-            amountIn,
-            TARGET_PRICE,
-            0,
-            true,
-            expiry,
-            SECRET
-        );
+        uint256 id = _submitAndReveal(USER, amountIn, TARGET_PRICE, 0, true, expiry, SECRET);
         vm.prank(USER);
         registry.depositIntentFunds(id);
 
@@ -438,25 +291,14 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
     // P7 — cancelIntent: pre-expiry on deposited intent always reverts
     // =========================================================================
 
-    function testFuzz_cancel_preExpiry_deposited_alwaysReverts(
-        uint256 amountIn,
-        uint256 secondsBeforeExpiry
-    ) public {
+    function testFuzz_cancel_preExpiry_deposited_alwaysReverts(uint256 amountIn, uint256 secondsBeforeExpiry) public {
         amountIn = bound(amountIn, 1, type(uint128).max);
         secondsBeforeExpiry = bound(secondsBeforeExpiry, 0, 1 days - 1);
 
         tokenIn.mint(USER, amountIn);
 
         uint256 expiry = block.timestamp + 1 days;
-        uint256 id = _submitAndReveal(
-            USER,
-            amountIn,
-            TARGET_PRICE,
-            0,
-            true,
-            expiry,
-            SECRET
-        );
+        uint256 id = _submitAndReveal(USER, amountIn, TARGET_PRICE, 0, true, expiry, SECRET);
         vm.prank(USER);
         registry.depositIntentFunds(id);
 
@@ -473,25 +315,14 @@ contract IntentRegistryFuzzTest is Test, IntentRegistryBase {
     // Extra — router always receives the committed minAmountOut (slippage binding)
     // =========================================================================
 
-    function testFuzz_execute_routerReceivesCommittedMinAmountOut(
-        uint256 amountIn,
-        uint256 minAmountOut
-    ) public {
+    function testFuzz_execute_routerReceivesCommittedMinAmountOut(uint256 amountIn, uint256 minAmountOut) public {
         amountIn = bound(amountIn, 1, type(uint128).max);
         minAmountOut = bound(minAmountOut, 0, amountIn); // sane range
 
         tokenIn.mint(USER, amountIn);
 
         uint256 expiry = block.timestamp + 1 days;
-        uint256 id = _submitAndReveal(
-            USER,
-            amountIn,
-            TARGET_PRICE,
-            minAmountOut,
-            true,
-            expiry,
-            SECRET
-        );
+        uint256 id = _submitAndReveal(USER, amountIn, TARGET_PRICE, minAmountOut, true, expiry, SECRET);
         vm.prank(USER);
         registry.depositIntentFunds(id);
 

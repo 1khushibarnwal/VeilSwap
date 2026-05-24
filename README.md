@@ -350,11 +350,15 @@ Polls PostgreSQL every 15 seconds for `READY` intents (revealed + deposited + no
 │   └── DeployIntentRegistry.s.sol
 ├── test/
 │   ├── unit/
+│   │   ├── CoverageGapTest.t.sol      ← tests added to cover previously uncovered lines/branches
+│   │   ├── DeployAllTest.t.sol
 │   │   ├── DeployIntentRegistryTest.t.sol
 │   │   ├── IntentRegistryBase.sol
+│   │   ├── IntentRegistryBranchesTest.t.sol
 │   │   ├── IntentRegistryTest.t.sol
 │   │   ├── Mocks.sol              ← MockERC20, MockRouter, HarnessIntentRegistry
 │   │   ├── MockUniswapV3PoolTest.t.sol
+│   │   ├── OracleBranchesTest.t.sol
 │   │   └── OracleLibraryTest.t.sol
 │   ├── fuzz/
 │   │   └── IntentRegistryFuzzTest.t.sol
@@ -509,6 +513,7 @@ All tests use Foundry. The `HarnessIntentRegistry` subclass in `test/unit/Mocks.
 | `OracleBranchesTest.t.sol`          | Branch                  | 13    | Uncovered branches in `getQuoteAtTick`, `getBlockStartingTickAndLiquidity`, `getOldestObservationSecondsAgo` |
 | `DeployAllTest.t.sol`               | Unit                    | 42    | All 9 deployment steps + MockERC20 + end-to-end flow                                                         |
 | `DeployIntentRegistryTest.t.sol`    | Unit                    | 3     | `DeployIntentRegistry.s.sol` deploy helper                                                                   |
+| `CoverageGapTest.t.sol`             | Unit                    | 27    | Coverage gaps in unit tests                                                                                  |
 | `MockUniswapV3PoolTest.t.sol`       | Unit + Fuzz + Invariant | 11    | Mock pool correctness and internal state consistency                                                         |
 
 ---

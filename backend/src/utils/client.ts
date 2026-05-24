@@ -1,7 +1,7 @@
 // src/utils/client.ts
 import { createPublicClient, createWalletClient, http, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { arbitrum } from "viem/chains";
+import { arbitrumSepolia } from "viem/chains"; // ← was `arbitrum` (mainnet!) — fixed
 
 // ── ABI: only the events and functions the backend needs ─────────────────────
 export const INTENT_REGISTRY_ABI = parseAbi([
@@ -22,8 +22,10 @@ export const INTENT_REGISTRY_ABI = parseAbi([
 
 // ── Public client — used by the indexer and keeper to read chain state ────────
 export const publicClient = createPublicClient({
-  chain: arbitrum,
-  transport: http(process.env.RPC_URL!),
+  chain: arbitrumSepolia,
+  transport: http(process.env.RPC_URL!, {
+    timeout: 10_000, // 10 s — surface hangs as errors instead of silently blocking
+  }),
 });
 
 // ── Wallet client — used by the keeper to send executeIntent transactions ─────
@@ -33,8 +35,8 @@ export function createKeeperClient() {
   );
   return createWalletClient({
     account,
-    chain: arbitrum,
-    transport: http(process.env.RPC_URL!),
+    chain: arbitrumSepolia,
+    transport: http(process.env.RPC_URL!, { timeout: 10_000 }),
   });
 }
 

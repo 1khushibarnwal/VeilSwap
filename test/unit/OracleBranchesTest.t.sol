@@ -43,13 +43,7 @@ contract FullMockPool {
     }
 
     /// Set a single observation slot.
-    function setObservation(
-        uint256 index,
-        uint32 ts,
-        int56 tc,
-        uint160 secPerLiq,
-        bool initialized
-    ) external {
+    function setObservation(uint256 index, uint32 ts, int56 tc, uint160 secPerLiq, bool initialized) external {
         _obs[index] = ObsData({
             blockTimestamp: ts,
             tickCumulative: tc,
@@ -73,20 +67,10 @@ contract FullMockPool {
             bool unlocked
         )
     {
-        return (
-            0,
-            _tick,
-            _observationIndex,
-            _observationCardinality,
-            0,
-            0,
-            true
-        );
+        return (0, _tick, _observationIndex, _observationCardinality, 0, 0, true);
     }
 
-    function observations(
-        uint256 index
-    )
+    function observations(uint256 index)
         external
         view
         returns (
@@ -97,12 +81,7 @@ contract FullMockPool {
         )
     {
         ObsData memory o = _obs[index];
-        return (
-            o.blockTimestamp,
-            o.tickCumulative,
-            o.secondsPerLiquidityCumulativeX128,
-            o.initialized
-        );
+        return (o.blockTimestamp, o.tickCumulative, o.secondsPerLiquidityCumulativeX128, o.initialized);
     }
 
     function liquidity() external view returns (uint128) {
@@ -110,25 +89,18 @@ contract FullMockPool {
     }
 
     /// consult() calls observe([secondsAgo, 0]) — wire it through observations[0/1].
-    function observe(
-        uint32[] calldata
-    )
+    function observe(uint32[] calldata)
         external
         view
-        returns (
-            int56[] memory tickCumulatives,
-            uint160[] memory secondsPerLiquidityCumulativeX128s
-        )
+        returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s)
     {
         tickCumulatives = new int56[](2);
         secondsPerLiquidityCumulativeX128s = new uint160[](2);
         // index 0 = older (secondsAgo), index 1 = newer (now)
         tickCumulatives[0] = _obs[0].tickCumulative;
         tickCumulatives[1] = _obs[1].tickCumulative;
-        secondsPerLiquidityCumulativeX128s[0] = _obs[0]
-            .secondsPerLiquidityCumulativeX128;
-        secondsPerLiquidityCumulativeX128s[1] = _obs[1]
-            .secondsPerLiquidityCumulativeX128;
+        secondsPerLiquidityCumulativeX128s[0] = _obs[0].secondsPerLiquidityCumulativeX128;
+        secondsPerLiquidityCumulativeX128s[1] = _obs[1].secondsPerLiquidityCumulativeX128;
     }
 }
 
@@ -142,12 +114,7 @@ contract GetQuoteAtTickElseBranchTest is Test {
     function test_highTick_baseTokenLessThanQuoteToken() public pure {
         address base = address(0x1);
         address quote = address(0x2);
-        uint256 result = OracleLibrary.getQuoteAtTick(
-            THRESHOLD_TICK,
-            1e18,
-            base,
-            quote
-        );
+        uint256 result = OracleLibrary.getQuoteAtTick(THRESHOLD_TICK, 1e18, base, quote);
         assertGt(result, 1e18, "at high tick price>1 so output>input");
     }
 
@@ -158,12 +125,7 @@ contract GetQuoteAtTickElseBranchTest is Test {
         address base = address(0x2); // > quote
         address quote = address(0x1);
         // 1e27 is large enough that (1<<128) * 1e27 / ratioX128 > 0
-        uint256 result = OracleLibrary.getQuoteAtTick(
-            THRESHOLD_TICK,
-            uint128(1e27),
-            base,
-            quote
-        );
+        uint256 result = OracleLibrary.getQuoteAtTick(THRESHOLD_TICK, uint128(1e27), base, quote);
         assertGt(result, 0, "quote must be non-zero with large base amount");
     }
 
@@ -172,18 +134,8 @@ contract GetQuoteAtTickElseBranchTest is Test {
         address lo = address(0x1);
         address hi = address(0x2);
         uint128 amt = 1e18;
-        uint256 below = OracleLibrary.getQuoteAtTick(
-            THRESHOLD_TICK - 1,
-            amt,
-            lo,
-            hi
-        );
-        uint256 atThreshold = OracleLibrary.getQuoteAtTick(
-            THRESHOLD_TICK,
-            amt,
-            lo,
-            hi
-        );
+        uint256 below = OracleLibrary.getQuoteAtTick(THRESHOLD_TICK - 1, amt, lo, hi);
+        uint256 atThreshold = OracleLibrary.getQuoteAtTick(THRESHOLD_TICK, amt, lo, hi);
         assertGt(below, 0);
         assertGt(atThreshold, 0);
     }
@@ -248,14 +200,8 @@ contract GetOldestObservationInitializedTest is Test {
         pool.setSlot0(0, 1, 3);
         pool.setObservation(2, 500, 0, 0, true); // nextIndex = 2
 
-        uint32 secs = OracleLibrary.getOldestObservationSecondsAgo(
-            address(pool)
-        );
-        assertEq(
-            secs,
-            500,
-            "should use the initialized next-index observation"
-        );
+        uint32 secs = OracleLibrary.getOldestObservationSecondsAgo(address(pool));
+        assertEq(secs, 500, "should use the initialized next-index observation");
     }
 
     // nextIndex NOT initialized → falls back to observations(0).
@@ -267,9 +213,7 @@ contract GetOldestObservationInitializedTest is Test {
         pool.setObservation(2, 0, 0, 0, false); // nextIndex not initialized
         pool.setObservation(0, 700, 0, 0, true); // fallback index 0
 
-        uint32 secs = OracleLibrary.getOldestObservationSecondsAgo(
-            address(pool)
-        );
+        uint32 secs = OracleLibrary.getOldestObservationSecondsAgo(address(pool));
         assertEq(secs, 300, "should fall back to observations(0)");
     }
 }
@@ -328,9 +272,7 @@ contract GetBlockStartingTickCurrentBlockTest is Test {
     function test_currentBlock_computesTickFromDelta() public {
         int24 expected = 200;
         _setupCurrentBlock(expected);
-        (int24 tick, ) = OracleLibrary.getBlockStartingTickAndLiquidity(
-            address(pool)
-        );
+        (int24 tick,) = OracleLibrary.getBlockStartingTickAndLiquidity(address(pool));
         assertEq(tick, expected, "current-block: positive tick");
     }
 
@@ -338,9 +280,7 @@ contract GetBlockStartingTickCurrentBlockTest is Test {
     function test_currentBlock_oneDeltaSecond() public {
         int24 expected = 1;
         _setupCurrentBlock(expected);
-        (int24 tick, ) = OracleLibrary.getBlockStartingTickAndLiquidity(
-            address(pool)
-        );
+        (int24 tick,) = OracleLibrary.getBlockStartingTickAndLiquidity(address(pool));
         assertEq(tick, expected);
     }
 
@@ -348,9 +288,7 @@ contract GetBlockStartingTickCurrentBlockTest is Test {
     function test_currentBlock_negativeCumulativeDelta() public {
         int24 expected = -150;
         _setupCurrentBlock(expected);
-        (int24 tick, ) = OracleLibrary.getBlockStartingTickAndLiquidity(
-            address(pool)
-        );
+        (int24 tick,) = OracleLibrary.getBlockStartingTickAndLiquidity(address(pool));
         assertEq(tick, expected, "current-block: negative tick");
     }
 
@@ -363,8 +301,7 @@ contract GetBlockStartingTickCurrentBlockTest is Test {
         // obs[0].ts != block.timestamp → past-block path
         pool.setObservation(0, TS - 100, 0, 0, true);
 
-        (int24 tick, uint128 liq) = OracleLibrary
-            .getBlockStartingTickAndLiquidity(address(pool));
+        (int24 tick, uint128 liq) = OracleLibrary.getBlockStartingTickAndLiquidity(address(pool));
         assertEq(tick, slot0tick, "past-block: should return slot0 tick");
         assertEq(liq, 1e6, "past-block: should return pool.liquidity()");
     }
@@ -377,10 +314,7 @@ contract MockRouterBranchDocumentationTest is Test {
     // MockERC20.transferFrom always reverts on failure (uses require, not return false).
     // Therefore the `if (!res) revert MockERC20__TransferFailed()` branch in
     // MockRouter is structurally unreachable.
-    function test_documentation_mockRouter_ifResBranchIsUnreachable()
-        public
-        pure
-    {
+    function test_documentation_mockRouter_ifResBranchIsUnreachable() public pure {
         assertTrue(true, "unreachable branch documented");
     }
 }

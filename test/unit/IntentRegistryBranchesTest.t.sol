@@ -28,11 +28,7 @@ contract FailingERC20 {
     }
 
     /// @dev Always returns false — triggers IntentRegistry__TransferInDepositIntentFailed
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) external pure returns (bool) {
+    function transferFrom(address, address, uint256) external pure returns (bool) {
         return false;
     }
 
@@ -65,10 +61,7 @@ contract IntentRegistryBranchTest is IntentRegistryBase {
     }
 
     // ── helper: submit + reveal an intent whose tokenIn is failToken ──────────
-    function _setupFailTokenIntent(
-        bool greaterThan,
-        uint256 expiry
-    ) internal returns (uint256 intentId) {
+    function _setupFailTokenIntent(bool greaterThan, uint256 expiry) internal returns (uint256 intentId) {
         bytes32 secret = keccak256("fail_secret");
         bytes32 hash = keccak256(
             abi.encodePacked(
@@ -116,11 +109,7 @@ contract IntentRegistryBranchTest is IntentRegistryBase {
         uint256 intentId = _setupFailTokenIntent(true, expiry);
 
         // FailingERC20.transferFrom returns false → registry must revert
-        vm.expectRevert(
-            IntentRegistry
-                .IntentRegistry__TransferInDepositIntentFailed
-                .selector
-        );
+        vm.expectRevert(IntentRegistry.IntentRegistry__TransferInDepositIntentFailed.selector);
         vm.prank(USER);
         registry.depositIntentFunds(intentId);
     }
@@ -177,15 +166,7 @@ contract IntentRegistryBranchTest is IntentRegistryBase {
 
     function test_cancel_revealedButNotDeposited_succeeds() public {
         uint256 expiry = block.timestamp + 1 days;
-        uint256 intentId = _submitAndReveal(
-            USER,
-            AMOUNT_IN,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            expiry,
-            SECRET
-        );
+        uint256 intentId = _submitAndReveal(USER, AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, SECRET);
         // revealed but NOT deposited — cancel allowed anytime
 
         vm.prank(USER);
@@ -251,14 +232,7 @@ contract IntentRegistryBranchTest is IntentRegistryBase {
 
         vm.prank(USER);
         bypass.revealIntent(
-            0,
-            address(failToken),
-            address(tokenOut),
-            AMOUNT_IN,
-            TARGET_PRICE,
-            MIN_AMOUNT_OUT,
-            true,
-            secret
+            0, address(failToken), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, secret
         );
 
         // Force deposited = true without calling the real deposit
@@ -268,9 +242,7 @@ contract IntentRegistryBranchTest is IntentRegistryBase {
         vm.warp(expiry + 1);
 
         // Now cancel — transfer() on failToken returns false → CancelTransferFailed
-        vm.expectRevert(
-            IntentRegistry.IntentRegistry__CancelTransferFailed.selector
-        );
+        vm.expectRevert(IntentRegistry.IntentRegistry__CancelTransferFailed.selector);
         vm.prank(USER);
         bypass.cancelIntent(0);
     }

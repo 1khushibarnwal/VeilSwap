@@ -15,7 +15,16 @@ import { logger } from "../utils/logger";
 
 const CHUNK = BigInt(process.env.INDEXER_BLOCK_CHUNK ?? "2000");
 const POLL_MS = Number(process.env.INDEXER_POLL_INTERVAL_MS ?? "5000");
-const DEPLOY_BLOCK = BigInt(process.env.INTENT_REGISTRY_DEPLOY_BLOCK ?? "0");
+
+// Fall back to INDEXER_START_BLOCK (the newer env var) or INTENT_REGISTRY_DEPLOY_BLOCK
+// for backwards compatibility, defaulting to 0.
+const DEPLOY_BLOCK = BigInt(
+  process.env.INDEXER_START_BLOCK ??
+    process.env.INTENT_REGISTRY_DEPLOY_BLOCK ??
+    "0",
+);
+
+const RPC_TIMEOUT_MS = 10_000; // 10 seconds — surfaces hangs as errors
 
 // ── Event ABI items for getLogs ───────────────────────────────────────────────
 const EV_SUBMITTED = parseAbiItem(
@@ -35,6 +44,25 @@ const EV_CANCELLED = parseAbiItem(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Wraps a promise with a hard timeout so hangs surface as errors. */
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`[indexer] "${label}" timed out after ${ms}ms`)),
+        ms,
+      ),
+    ),
+  ]);
+}
 
 async function getLastIndexedBlock(): Promise<bigint> {
   const state = await prisma.indexerState.findUnique({ where: { id: 1 } });
@@ -59,18 +87,20 @@ async function handleSubmitted(
   const intentId = log.args.intentId!;
   const user = log.args.user!;
 
-  // Fetch the on-chain struct to get the commitmentHash and expiry which are
-  // NOT in the event itself.
-  const onChain = await publicClient.readContract({
-    address: CONTRACT_ADDRESS,
-    abi: INTENT_REGISTRY_ABI,
-    functionName: "getIntent",
-    args: [intentId],
-  });
+  const onChain = await withTimeout(
+    publicClient.readContract({
+      address: CONTRACT_ADDRESS,
+      abi: INTENT_REGISTRY_ABI,
+      functionName: "getIntent",
+      args: [intentId],
+    }),
+    RPC_TIMEOUT_MS,
+    "getIntent(submitted)",
+  );
 
   await prisma.intent.upsert({
     where: { intentId },
-    update: {}, // already exists — idempotent
+    update: {},
     create: {
       intentId,
       user: user.toLowerCase(),
@@ -92,12 +122,16 @@ async function handleRevealed(
 ) {
   const intentId = log.args.intentId!;
 
-  const onChain = await publicClient.readContract({
-    address: CONTRACT_ADDRESS,
-    abi: INTENT_REGISTRY_ABI,
-    functionName: "getIntent",
-    args: [intentId],
-  });
+  const onChain = await withTimeout(
+    publicClient.readContract({
+      address: CONTRACT_ADDRESS,
+      abi: INTENT_REGISTRY_ABI,
+      functionName: "getIntent",
+      args: [intentId],
+    }),
+    RPC_TIMEOUT_MS,
+    "getIntent(revealed)",
+  );
 
   await prisma.intent.update({
     where: { intentId },
@@ -168,7 +202,7 @@ async function handleCancelled(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Core indexing loop — fetches one chunk of blocks and processes all events
+// Core indexing loop
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function indexChunk(from: bigint, to: bigint): Promise<void> {
@@ -177,42 +211,44 @@ async function indexChunk(from: bigint, to: bigint): Promise<void> {
     to: to.toString(),
   });
 
-  // Fetch all relevant events for this range in parallel.
   const [submitted, revealed, deposited, executed, cancelled] =
-    await Promise.all([
-      publicClient.getLogs({
-        address: CONTRACT_ADDRESS,
-        event: EV_SUBMITTED,
-        fromBlock: from,
-        toBlock: to,
-      }),
-      publicClient.getLogs({
-        address: CONTRACT_ADDRESS,
-        event: EV_REVEALED,
-        fromBlock: from,
-        toBlock: to,
-      }),
-      publicClient.getLogs({
-        address: CONTRACT_ADDRESS,
-        event: EV_DEPOSITED,
-        fromBlock: from,
-        toBlock: to,
-      }),
-      publicClient.getLogs({
-        address: CONTRACT_ADDRESS,
-        event: EV_EXECUTED,
-        fromBlock: from,
-        toBlock: to,
-      }),
-      publicClient.getLogs({
-        address: CONTRACT_ADDRESS,
-        event: EV_CANCELLED,
-        fromBlock: from,
-        toBlock: to,
-      }),
-    ]);
+    await withTimeout(
+      Promise.all([
+        publicClient.getLogs({
+          address: CONTRACT_ADDRESS,
+          event: EV_SUBMITTED,
+          fromBlock: from,
+          toBlock: to,
+        }),
+        publicClient.getLogs({
+          address: CONTRACT_ADDRESS,
+          event: EV_REVEALED,
+          fromBlock: from,
+          toBlock: to,
+        }),
+        publicClient.getLogs({
+          address: CONTRACT_ADDRESS,
+          event: EV_DEPOSITED,
+          fromBlock: from,
+          toBlock: to,
+        }),
+        publicClient.getLogs({
+          address: CONTRACT_ADDRESS,
+          event: EV_EXECUTED,
+          fromBlock: from,
+          toBlock: to,
+        }),
+        publicClient.getLogs({
+          address: CONTRACT_ADDRESS,
+          event: EV_CANCELLED,
+          fromBlock: from,
+          toBlock: to,
+        }),
+      ]),
+      RPC_TIMEOUT_MS,
+      `getLogs(${from}-${to})`,
+    );
 
-  // Process events in block order so state updates are consistent.
   type AnyLog =
     | (typeof submitted)[number]
     | (typeof revealed)[number]
@@ -270,7 +306,18 @@ export async function startIndexer(): Promise<void> {
 
   const poll = async () => {
     try {
-      const latestBlock = await publicClient.getBlockNumber();
+      logger.debug("Indexer poll: fetching latest block...");
+
+      const latestBlock = await withTimeout(
+        publicClient.getBlockNumber(),
+        RPC_TIMEOUT_MS,
+        "getBlockNumber",
+      );
+
+      logger.debug("Indexer poll: latest block fetched", {
+        latestBlock: latestBlock.toString(),
+      });
+
       const lastProcessed = await getLastIndexedBlock();
 
       if (lastProcessed >= latestBlock) {
@@ -294,7 +341,6 @@ export async function startIndexer(): Promise<void> {
     }
   };
 
-  // Run once immediately, then on interval.
   await poll();
   setInterval(poll, POLL_MS);
 }
