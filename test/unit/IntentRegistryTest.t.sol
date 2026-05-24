@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {IntentRegistry} from "../../src/IntentRegistry.sol";
-import {IntentRegistryBase} from "./IntentRegistryBase.t.sol";
+import {IntentRegistryBase} from "./IntentRegistryBase.sol";
 import {MockERC20, HarnessIntentRegistry} from "./Mocks.sol";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -41,7 +41,9 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
     }
 
     function test_registerPool_revertsIfCallerIsNotOwner() public {
-        vm.expectRevert(IntentRegistry.IntentRegistry__NotContractOwner.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__NotContractOwner.selector
+        );
         vm.prank(OTHER);
         registry.registerPool(address(tokenIn), address(tokenOut), POOL);
     }
@@ -53,7 +55,10 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         registry.registerPool(address(tokenIn), address(tokenOut), p1);
         registry.registerPool(address(tokenIn), address(tokenOut), p2);
 
-        assertEq(registry.tokenPairPool(address(tokenIn), address(tokenOut)), p2);
+        assertEq(
+            registry.tokenPairPool(address(tokenIn), address(tokenOut)),
+            p2
+        );
     }
 
     // =========================================================================
@@ -120,13 +125,28 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
-            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, secret
+            USER,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            secret
         );
 
         vm.startPrank(USER);
         registry.submitIntent(hash, expiry);
         registry.revealIntent(
-            0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, secret
+            0,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            secret
         );
         vm.stopPrank();
 
@@ -144,7 +164,15 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
-            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, false, expiry, secret
+            USER,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            false,
+            expiry,
+            secret
         );
 
         vm.prank(USER);
@@ -155,7 +183,14 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
 
         vm.prank(USER);
         registry.revealIntent(
-            0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, false, secret
+            0,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            false,
+            secret
         );
     }
 
@@ -167,7 +202,14 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         vm.expectRevert(IntentRegistry.IntentRegistry__NotIntentOwner.selector);
         vm.prank(OTHER);
         registry.revealIntent(
-            0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, keccak256("x")
+            0,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            keccak256("x")
         );
     }
 
@@ -175,18 +217,42 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
-            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, secret
+            USER,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            secret
         );
 
         vm.startPrank(USER);
         registry.submitIntent(hash, expiry);
         registry.revealIntent(
-            0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, secret
+            0,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            secret
         );
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__AlreadyRevealed.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__AlreadyRevealed.selector
+        );
         registry.revealIntent(
-            0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, secret
+            0,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            secret
         );
         vm.stopPrank();
     }
@@ -208,10 +274,19 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         vm.prank(USER);
         registry.submitIntent(hash, expiry);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__RevealHashMismatch.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__RevealHashMismatch.selector
+        );
         vm.prank(USER);
         registry.revealIntent(
-            0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, keccak256("wrong")
+            0,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            keccak256("wrong")
         );
     }
 
@@ -219,13 +294,23 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
-            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, secret
+            USER,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            secret
         );
 
         vm.prank(USER);
         registry.submitIntent(hash, expiry);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__RevealHashMismatch.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__RevealHashMismatch.selector
+        );
         vm.prank(USER);
         registry.revealIntent(
             0,
@@ -243,17 +328,34 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
-            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, secret
+            USER,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            secret
         );
 
         vm.prank(USER);
         registry.submitIntent(hash, expiry);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__RevealHashMismatch.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__RevealHashMismatch.selector
+        );
         vm.prank(USER);
         // greaterThan flipped to false
         registry.revealIntent(
-            0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, false, secret
+            0,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            false,
+            secret
         );
     }
 
@@ -261,13 +363,23 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         uint256 expiry = block.timestamp + 1 days;
         bytes32 secret = keccak256("s");
         bytes32 hash = _buildHash(
-            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, secret
+            USER,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            secret
         );
 
         vm.prank(USER);
         registry.submitIntent(hash, expiry);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__RevealHashMismatch.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__RevealHashMismatch.selector
+        );
         vm.prank(USER);
         registry.revealIntent(
             0,
@@ -286,17 +398,34 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         uint256 fakeExpiry = block.timestamp + 2 days;
 
         bytes32 hash = _buildHash(
-            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, fakeExpiry, SECRET
+            USER,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            fakeExpiry,
+            SECRET
         );
 
         vm.prank(USER);
         registry.submitIntent(hash, realExpiry);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__RevealHashMismatch.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__RevealHashMismatch.selector
+        );
 
         vm.prank(USER);
         registry.revealIntent(
-            0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, SECRET
+            0,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            SECRET
         );
     }
 
@@ -305,7 +434,15 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         bytes32 secret = keccak256("s");
 
         bytes32 hash = _buildHash(
-            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, secret
+            USER,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            secret
         );
 
         vm.prank(USER);
@@ -315,7 +452,14 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
 
         vm.prank(USER);
         registry.revealIntent(
-            0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, secret
+            0,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            secret
         );
 
         assertTrue(registry.getIntent(0).revealed);
@@ -327,7 +471,15 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
 
     function test_deposit_transfersTokensToRegistry() public {
         uint256 expiry = block.timestamp + 1 days;
-        _submitAndReveal(USER, AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, SECRET);
+        _submitAndReveal(
+            USER,
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            SECRET
+        );
 
         uint256 userBefore = tokenIn.balanceOf(USER);
         uint256 registryBefore = tokenIn.balanceOf(address(registry));
@@ -336,13 +488,24 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         registry.depositIntentFunds(0);
 
         assertEq(tokenIn.balanceOf(USER), userBefore - AMOUNT_IN);
-        assertEq(tokenIn.balanceOf(address(registry)), registryBefore + AMOUNT_IN);
+        assertEq(
+            tokenIn.balanceOf(address(registry)),
+            registryBefore + AMOUNT_IN
+        );
         assertTrue(registry.getIntent(0).deposited);
     }
 
     function test_deposit_emitsFundsDeposited() public {
         uint256 expiry = block.timestamp + 1 days;
-        _submitAndReveal(USER, AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, SECRET);
+        _submitAndReveal(
+            USER,
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            SECRET
+        );
 
         vm.expectEmit(true, false, false, true);
         emit IntentRegistry.FundsDeposited(0, AMOUNT_IN);
@@ -353,7 +516,15 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
 
     function test_deposit_revertsIfNotOwner() public {
         uint256 expiry = block.timestamp + 1 days;
-        _submitAndReveal(USER, AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, SECRET);
+        _submitAndReveal(
+            USER,
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            SECRET
+        );
 
         vm.expectRevert(IntentRegistry.IntentRegistry__NotIntentOwner.selector);
         vm.prank(OTHER);
@@ -362,12 +533,22 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
 
     function test_deposit_revertsOnDoubleDeposit() public {
         uint256 expiry = block.timestamp + 1 days;
-        _submitAndReveal(USER, AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, SECRET);
+        _submitAndReveal(
+            USER,
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            SECRET
+        );
 
         vm.startPrank(USER);
         registry.depositIntentFunds(0);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__AlreadyDeposited.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__AlreadyDeposited.selector
+        );
         registry.depositIntentFunds(0);
         vm.stopPrank();
     }
@@ -390,7 +571,15 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         uint256 expiry = block.timestamp + 1 days;
 
         bytes32 hash = _buildHash(
-            USER, address(evil), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, SECRET
+            USER,
+            address(evil),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            SECRET
         );
 
         vm.prank(USER);
@@ -398,7 +587,14 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
 
         vm.prank(USER);
         registry.revealIntent(
-            0, address(evil), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, SECRET
+            0,
+            address(evil),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            SECRET
         );
 
         vm.expectRevert();
@@ -443,7 +639,9 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
     function test_execute_greaterThan_priceBelowTarget_reverts() public {
         uint256 id = _fullSetup(true, block.timestamp + 1 days);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__PriceConditionNotMet.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__PriceConditionNotMet.selector
+        );
         vm.prank(KEEPER);
         registry.executeIntentWithMockPrice(id, TARGET_PRICE - 1);
     }
@@ -467,7 +665,9 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
     function test_execute_lessThan_priceAboveTarget_reverts() public {
         uint256 id = _fullSetup(false, block.timestamp + 1 days);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__PriceConditionNotMet.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__PriceConditionNotMet.selector
+        );
         vm.prank(KEEPER);
         registry.executeIntentWithMockPrice(id, TARGET_PRICE + 1);
     }
@@ -479,7 +679,9 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         vm.prank(USER);
         registry.submitIntent(keccak256("x"), expiry);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__IntentNotRevealed.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__IntentNotRevealed.selector
+        );
         registry.executeIntentWithMockPrice(0, TARGET_PRICE + 1);
     }
 
@@ -488,7 +690,9 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         vm.prank(KEEPER);
         registry.executeIntentWithMockPrice(id, TARGET_PRICE);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__AlreadyExecuted.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__AlreadyExecuted.selector
+        );
         vm.prank(KEEPER);
         registry.executeIntentWithMockPrice(id, TARGET_PRICE);
     }
@@ -508,7 +712,15 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
 
         uint256 expiry = block.timestamp + 1 days;
         bytes32 hash = _buildHash(
-            USER, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, SECRET
+            USER,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            SECRET
         );
 
         vm.prank(USER);
@@ -516,11 +728,22 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
 
         vm.startPrank(USER);
         bare.submitIntent(hash, expiry);
-        bare.revealIntent(0, address(tokenIn), address(tokenOut), AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, SECRET);
+        bare.revealIntent(
+            0,
+            address(tokenIn),
+            address(tokenOut),
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            SECRET
+        );
         bare.depositIntentFunds(0);
         vm.stopPrank();
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__PoolNotRegistered.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__PoolNotRegistered.selector
+        );
         bare.executeIntentWithMockPrice(0, TARGET_PRICE);
     }
 
@@ -579,7 +802,15 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
     function test_execute_withoutDeposit_reverts() public {
         uint256 expiry = block.timestamp + 1 days;
 
-        uint256 id = _submitAndReveal(USER, AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, SECRET);
+        uint256 id = _submitAndReveal(
+            USER,
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            SECRET
+        );
 
         vm.expectRevert();
 
@@ -623,7 +854,15 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
 
     function test_cancel_withoutDeposit_allowedBeforeExpiry() public {
         uint256 expiry = block.timestamp + 1 days;
-        uint256 id = _submitAndReveal(USER, AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, SECRET);
+        uint256 id = _submitAndReveal(
+            USER,
+            AMOUNT_IN,
+            TARGET_PRICE,
+            MIN_AMOUNT_OUT,
+            true,
+            expiry,
+            SECRET
+        );
         // No deposit — cancellation must succeed immediately.
         vm.prank(USER);
         registry.cancelIntent(id);
@@ -667,7 +906,9 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         vm.prank(KEEPER);
         registry.executeIntentWithMockPrice(id, TARGET_PRICE);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__IntentAlreadyExecuted.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__IntentAlreadyExecuted.selector
+        );
         vm.prank(USER);
         registry.cancelIntent(id);
     }
@@ -680,7 +921,9 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         vm.startPrank(USER);
         registry.cancelIntent(id);
 
-        vm.expectRevert(IntentRegistry.IntentRegistry__AlreadyCancelled.selector);
+        vm.expectRevert(
+            IntentRegistry.IntentRegistry__AlreadyCancelled.selector
+        );
         registry.cancelIntent(id);
         vm.stopPrank();
     }

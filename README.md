@@ -351,13 +351,11 @@ Polls PostgreSQL every 15 seconds for `READY` intents (revealed + deposited + no
 ├── test/
 │   ├── unit/
 │   │   ├── DeployIntentRegistryTest.t.sol
-│   │   ├── IntentRegistryBase.t.sol
+│   │   ├── IntentRegistryBase.sol
 │   │   ├── IntentRegistryTest.t.sol
 │   │   ├── Mocks.sol              ← MockERC20, MockRouter, HarnessIntentRegistry
-│   │   ├── MockUniswapV3PoolTestTest.t.sol
-│   │   ├── OracleLibraryBranchesTest.t.sol
-│   │   ├── OracleLibraryTest.t.sol
-│   │   └── OracleLibraryWrapper.sol
+│   │   ├── MockUniswapV3PoolTest.t.sol
+│   │   └── OracleLibraryTest.t.sol
 │   ├── fuzz/
 │   │   └── IntentRegistryFuzzTest.t.sol
 │   └── invariant/
@@ -476,52 +474,200 @@ API will be available at `http://localhost:3001`.
 
 ## Testing
 
-### Test Architecture
+The full test suite is written in Foundry and covers **202 tests** across unit, fuzz, invariant, branch-coverage, and mock validation categories.
 
-All tests use Foundry. A `HarnessIntentRegistry` subclass exposes `executeIntentWithMockPrice()` which replaces the two `OracleLibrary` calls with a caller-supplied price, allowing full execution logic to be tested without a live Uniswap pool.
+```bash
+# Run all tests
+forge test
 
-### Unit Tests (`test/unit/`)
+# Run with coverage (--ir-minimum resolves stack-too-deep on coverage builds)
+forge coverage --ir-minimum
 
-40 tests covering every function and every custom error selector:
-
-- `submitIntent` — storage, ID increment, expiry boundary, event
-- `revealIntent` — field updates, hash mismatch on every tampered field, owner check, double-reveal
-- `depositIntentFunds` — balance delta, double-deposit, owner check, event
-- `executeIntent` — both `greaterThan` directions, boundary at `targetPrice`, all guard reverts, router parameters, allowance reset, event
-- `cancelIntent` — refund after expiry, pre-expiry revert, no-deposit any-time cancel, double-cancel, executed-intent revert
-- `registerPool` — bidirectional storage, non-owner revert
-- `OracleLibrary` — TWAP tick recovery, floor rounding, quote math, boundary ticks
-
-### Fuzz Tests (`test/fuzz/`)
-
-9 property-based tests using `bound()`:
-
-| Property | What it proves                                                            |
-| -------- | ------------------------------------------------------------------------- |
-| P1       | Any future expiry accepted; past/present always reverts                   |
-| P2 ×5    | Every single-field mutation in the commitment causes `RevealHashMismatch` |
-| P3       | Price condition boundary is exact for both directions                     |
-| P4       | Post-expiry execution always reverts regardless of price                  |
-| P5       | Registry balance delta equals exactly `amountIn` on deposit               |
-| P6       | Post-expiry cancel refunds exactly `amountIn`                             |
-| P7       | Pre-expiry cancel on deposited intent always reverts                      |
-
-### Invariant Tests (`test/invariant/`)
-
-8 invariants verified across thousands of randomised action sequences:
-
-| #   | Invariant                                                                         |
-| --- | --------------------------------------------------------------------------------- |
-| I1  | `registry.balance == deposited − executed − refunded` at all times                |
-| I2  | `executed && cancelled` is never simultaneously true                              |
-| I3  | `executed` flag is terminal — never resets to false                               |
-| I4  | `cancelled` flag is terminal — never resets to false                              |
-| I5  | Every revealed intent satisfies its original `commitmentHash`                     |
-| I6  | `nextIntentId` never decreases                                                    |
-| I7  | Router allowance is always zero between transactions                              |
-| I8  | `ghost_totalRefunded` matches the sum of all on-chain cancelled+deposited intents |
+# Run a specific suite
+forge test --match-contract IntentRegistryUnitTest -v
+forge test --match-contract IntentRegistryFuzzTest -v
+forge test --match-contract IntentRegistryInvariantTest -v
+```
 
 ---
+
+### Test Architecture
+
+All tests use Foundry. The `HarnessIntentRegistry` subclass in `test/unit/Mocks.sol` exposes `executeIntentWithMockPrice(intentId, mockPrice)`, which replaces the two `OracleLibrary` calls with a caller-supplied price. This lets every unit, fuzz, and invariant test exercise the full execution logic — guards, CEI ordering, approve/revoke, event emission — without a live Uniswap V3 pool. The real `executeIntent` path (with actual TWAP oracle) is covered by `OracleLibraryTest.t.sol` and `OracleBranchesTest.t.sol` via the `OracleLibraryWrapper` contract.
+
+---
+
+### File Overview
+
+| File                                | Category                | Tests | What it covers                                                                                               |
+| ----------------------------------- | ----------------------- | ----- | ------------------------------------------------------------------------------------------------------------ |
+| `IntentRegistryTest.t.sol`          | Unit                    | 53    | Full lifecycle of `IntentRegistry`                                                                           |
+| `IntentRegistryBranchesTest.t.sol`  | Branch                  | 6     | Structurally hard-to-reach branches                                                                          |
+| `IntentRegistryFuzzTest.t.sol`      | Fuzz                    | 14    | Property-based invariants on inputs                                                                          |
+| `IntentRegistryInvariantTest.t.sol` | Invariant               | 8     | Global state invariants over random action sequences                                                         |
+| `OracleLibraryTest.t.sol`           | Unit + Fuzz             | 52    | All 6 OracleLibrary functions across 7 test suites                                                           |
+| `OracleBranchesTest.t.sol`          | Branch                  | 13    | Uncovered branches in `getQuoteAtTick`, `getBlockStartingTickAndLiquidity`, `getOldestObservationSecondsAgo` |
+| `DeployAllTest.t.sol`               | Unit                    | 42    | All 9 deployment steps + MockERC20 + end-to-end flow                                                         |
+| `DeployIntentRegistryTest.t.sol`    | Unit                    | 3     | `DeployIntentRegistry.s.sol` deploy helper                                                                   |
+| `MockUniswapV3PoolTest.t.sol`       | Unit + Fuzz + Invariant | 11    | Mock pool correctness and internal state consistency                                                         |
+
+---
+
+### IntentRegistryTest.t.sol — 53 tests
+
+One section per function. Every custom error selector is tested exactly once in its own test.
+
+**`registerPool`** — bidirectional storage, event emission, non-owner revert, pool overwrite.
+
+**`submitIntent`** — correct struct storage, ID increment, `IntentSubmitted` event, expiry-equals-now revert, past-expiry revert.
+
+**`revealIntent`** — all fields updated correctly, `IntentRevealed` event, not-owner revert, already-revealed revert, hash mismatch on wrong secret / wrong `amountIn` / flipped `greaterThan` / tampered `minAmountOut`, stored-expiry-not-caller-controlled (expiry substitution attack).
+
+**`depositIntentFunds`** — token balance delta, `FundsDeposited` event, not-owner revert, double-deposit revert, deposit-before-reveal revert, failed-transfer state rollback.
+
+**`executeIntentWithMockPrice`** — `greaterThan=true` at target/above/below, `greaterThan=false` at target/below/above, not-revealed revert, already-executed revert, expired revert, pool-not-registered revert, correct router parameters, zero allowance after swap, output tokens go to user, anyone-can-call-as-keeper, `IntentExecuted` event, execute-without-deposit revert, intent data preserved after execution.
+
+**`cancelIntent`** — full refund after expiry, no-deposit cancel anytime, `IntentCancelled` event, not-owner revert, deposited-not-yet-expired revert, already-executed revert, double-cancel revert, cancel-at-exact-expiry revert, cancel-one-second-after-expiry succeeds.
+
+**`getIntent`** — zero struct for unknown ID.
+
+**Multi-intent isolation** — two concurrent intents do not bleed state.
+
+---
+
+### IntentRegistryBranchesTest.t.sol — 6 tests
+
+Targets the three branches that are unreachable through normal happy-path and revert-path tests:
+
+**`depositIntentFunds` — `transferFrom` returns `false`** (`FailingERC20` that returns `false` instead of reverting): hits `IntentRegistry__TransferInDepositIntentFailed`. Confirms the `deposited` flag is not persisted after revert.
+
+**`cancelIntent` — `deposited == false` (no-deposit path)**: the `if (intent.deposited)` false branch — no token transfer occurs, only the flag and event. Tested at submit-only and reveal-only stages.
+
+**`cancelIntent` — `transfer` returns `false`**: uses `BypassRegistry.forceDeposited()` to set `deposited=true` without calling `transferFrom`, then cancels post-expiry to hit `IntentRegistry__CancelTransferFailed`.
+
+---
+
+### IntentRegistryFuzzTest.t.sol — 14 tests
+
+Each property uses `bound()` to constrain inputs efficiently.
+
+| Property | What it proves                                                                    |
+| -------- | --------------------------------------------------------------------------------- |
+| P1       | Any future expiry is accepted; any past/present expiry always reverts             |
+| P2       | Tampered `amountIn` always causes `RevealHashMismatch`                            |
+| P3       | Tampered `targetPrice` always causes `RevealHashMismatch`                         |
+| P4       | Tampered `minAmountOut` always causes `RevealHashMismatch` — slippage is binding  |
+| P5       | Wrong secret always causes `RevealHashMismatch`                                   |
+| P6       | Flipped `greaterThan` always causes `RevealHashMismatch`                          |
+| P7       | `greaterThan=true`: executes iff `price >= target`; reverts otherwise             |
+| P8       | `greaterThan=false`: executes iff `price <= target`; reverts otherwise            |
+| P9       | Post-expiry execution always reverts regardless of price                          |
+| P10      | Registry balance delta equals exactly `amountIn` on deposit                       |
+| P11      | Post-expiry cancel refunds exactly `amountIn`                                     |
+| P12      | Pre-expiry cancel on deposited intent always reverts                              |
+| P13      | Router always receives the committed `minAmountOut` (slippage binding end-to-end) |
+| P14      | `getIntent` always returns a valid struct for any submitted intentId              |
+
+---
+
+### IntentRegistryInvariantTest.t.sol — 8 invariants
+
+Uses the Foundry handler pattern. `IntentRegistryHandler` drives the fuzzer with three actions (`submitRevealDeposit`, `executeIntent`, `cancelIntent`) plus `warpTime`, and maintains ghost accounting variables that the invariant assertions verify.
+
+| #   | Invariant                                                                                                   |
+| --- | ----------------------------------------------------------------------------------------------------------- |
+| I1  | `registry.tokenIn.balance == totalDeposited − totalExecuted − totalRefunded` at all times                   |
+| I2  | `executed && cancelled` is never simultaneously true for any intent                                         |
+| I3  | `executed` flag is terminal — never resets to false once set                                                |
+| I4  | `cancelled` flag is terminal — never resets to false once set                                               |
+| I5  | Every revealed intent satisfies its original `commitmentHash`                                               |
+| I6  | `nextIntentId` is monotonically non-decreasing                                                              |
+| I7  | Router allowance on `tokenIn` is always zero between transactions                                           |
+| I8  | `ghost_totalRefunded` exactly matches the sum of `amountIn` across all on-chain cancelled+deposited intents |
+
+---
+
+### OracleLibraryTest.t.sol — 52 tests across 7 suites
+
+Uses `OracleLibraryWrapper` (a thin contract that exposes all `internal` library functions as `external`) and `MockUniswapV3Pool` (a full mock that satisfies both the `observe()` API used by `consult()` and the `slot0()`/`observations()` API used by `getBlockStartingTickAndLiquidity` and `getOldestObservationSecondsAgo`).
+
+**`ConsultTest`** — zero tick, positive tick, positive-with-negative-baseline, negative exact division, negative exact no-extra-round, negative rounds toward −∞, minimum `secondsAgo=1`, harmonic mean liquidity non-zero, larger delta gives lower liquidity. Revert: `secondsAgo=0`.
+
+**`ConsultFuzzTest`** — floor-division rounding holds for all tick deltas and windows; mean tick stays within the valid Uniswap range `[MIN_TICK, MAX_TICK]`.
+
+**`GetQuoteAtTickTest`** — tick 0 returns base amount for both token orderings, positive tick gives higher quote, boundary ticks (MIN/MAX) do not revert, large/zero base amounts, both token ordering branches.
+
+**`GetOldestObservationSecondsAgoTest`** — cardinality-zero revert, single observation wraps to self, next-initialized path, next-uninitialized fallback to index 0. Fuzz: seconds-ago always matches the timestamp delta.
+
+**`GetBlockStartingTickAndLiquidityTest`** — cardinality-one revert, uninitialized-prev revert, past-block returns slot0 tick and pool liquidity directly.
+
+**`GetWeightedArithmeticMeanTickTest`** — single entry, equal weights, unequal weights, negative ticks exact, negative ticks floor rounding, positive ticks truncation, mixed-sign zero result, dominant weight. Fuzz: single entry always returns its tick; symmetric ticks average near zero; result bounded by input range.
+
+**`GetChainedPriceTest`** — length mismatch revert (two variants), single-hop sorted/reversed/negative/zero, two-hop same-order/add-then-subtract. Fuzz: sort order determines sign; round-trip two-hop gives `tick1 − tick2`.
+
+---
+
+### OracleBranchesTest.t.sol — 13 tests across 5 suites
+
+Targets the branches missed by the main oracle suite.
+
+**`GetQuoteAtTickElseBranchTest`** — exercises the `sqrtRatioX96 > type(uint128).max` path (tick ≥ 443637): forward direction gives non-zero output, reversed direction rounds to zero at `1e18` base (mathematically correct — extreme ratio), reversed with `type(uint128).max` base gives non-zero output, threshold comparison confirms IF vs ELSE split at tick 443636/443637.
+
+**`GetQuoteAtTickIfReversedTest`** — IF branch (small sqrt) with `baseToken > quoteToken`: tick 0 reversed is still 1:1, positive tick reversed gives less output, negative tick reversed gives more output.
+
+**`GetOldestObservationInitializedTest`** — next index IS initialized: uses next directly without fallback, confirms it does not fall back to index 0.
+
+**`GetBlockStartingTickCurrentBlockTest`** — latest observation is in the current block: tick derived from cumulative delta (positive), one-second delta, negative cumulative delta, past-block returns slot0 directly. All tests use `vm.warp(10_000)` to prevent `uint32` underflow from Foundry's default `block.timestamp = 1`.
+
+**`MockRouterBranchDocumentationTest`** — documents the structurally unreachable `if (!res)` branch in `MockRouter` (dead code because `MockERC20` always reverts rather than returning `false`).
+
+---
+
+### DeployAllTest.t.sol — 42 tests
+
+Tests every step of the `DeployAll` deployment script via `DeployAllHelper`, a testable equivalent that accepts injected mock addresses for the three Uniswap contracts (`MockUniswapV3Factory`, `MockPositionManager`, `MockUniswapV3Pool`).
+
+**Constants** — 4 tests verifying `FEE`, `SQRT_PRICE_1_TO_1`, tick range, and mint amounts match `DeployAll` exactly.
+
+**`MockERC20` contract** — 8 tests covering every function and revert: constructor metadata, `mint` balance/supply/event, `approve` allowance/event, `transfer` happy-path/insufficient-balance, `transferFrom` happy-path/balance-revert/allowance-revert.
+
+**Steps 1–2 (token deployment)** — correct name, symbol, decimals for both `mWETH` and `mUSDC`; distinct addresses.
+
+**Step 3 (registry deployment)** — router address stored correctly, `CONTRACT_OWNER` is deployer, `nextIntentId` starts at zero.
+
+**Step 4 (pool creation) — both branches** — new pool created when none exists; existing pool reused on re-run (idempotent).
+
+**Step 5 (initialization) — both branches** — fresh pool initializes correctly; already-initialized pool does not revert (`try/catch` coverage).
+
+**Step 6 (minting)** — `totalSupply` equals `MINT_AMOUNT_WETH` and `MINT_AMOUNT_USDC`.
+
+**Step 7 (approval)** — position manager has non-zero allowance for both tokens.
+
+**Step 8 (liquidity) — 7 tests** — token ordering matches pool's `token0`/`token1` sort, amounts correct for both `wethIsToken0=true/false`, correct tick range, correct fee, recipient is deployer, zero slippage minimums, future deadline, `mintCalled` flag set.
+
+**Step 9 (pool registration)** — both directions (`weth→usdc` and `usdc→weth`) registered; registry address matches factory.
+
+**End-to-end** — 2 tests running the full `submit → reveal → deposit` flow against the deployed registry to confirm all contracts are wired correctly for real usage.
+
+---
+
+### DeployIntentRegistryTest.t.sol — 3 tests
+
+Tests the `DeployIntentRegistry.s.sol` deploy helper (the script with `vm.prompt` for interactive deployment). Calls `deployer.deploy(ROUTER)` directly, bypassing the `run()` entry point.
+
+- Router address stored correctly in the deployed registry
+- Deployed address is non-zero (valid contract)
+- `nextIntentId` starts at zero (clean initial state)
+
+---
+
+### MockUniswapV3PoolTest.t.sol — 11 tests across 2 suites
+
+Validates the `MockUniswapV3Pool` contract used throughout the oracle test suite, ensuring the mock itself behaves correctly before it is relied upon as a test dependency.
+
+**`MockUniswapV3PoolTest` (unit + fuzz — 9 tests)** — `setSlot0` stores tick/index/cardinality correctly; `setLiquidity` stores and returns correctly; `pushObservation` stores all four fields; `clearObservations` removes all entries and reverts on subsequent access; `setObserveData` populates both arrays and returns them verbatim from `observe()`. Four matching fuzz tests cover the same functions with arbitrary inputs.
+
+**`MockUniswapV3PoolInvariant` (invariant — 2 invariants)** — `invariant_LiquidityConsistent`: `pool.liquidity()` always equals `pool.liquidityValue()` regardless of action sequence; `invariant_Slot0Consistent`: `slot0()` return values always match the public storage accessors `slot0Tick()`, `observationIndex()`, `observationCardinality()`.
 
 ## Integration Guide
 
@@ -715,7 +861,7 @@ A: `targetPrice` is expressed as `getQuoteAtTick(tick, amountIn, tokenIn, tokenO
 ## Team
 
 - **Khushi Barnwal** — Smart Contract Engineering & Backend
-- **Nayab Khan** — Smart Contract Engineering & Protocol Design
+- **Nayab Khan** — Frontend Engineering & Product Experience
 
 ---
 
