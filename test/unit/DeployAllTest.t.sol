@@ -313,6 +313,29 @@ contract DeployAllTest is Test {
         assertEq(token.balanceOf(address(0xA)), 400);
     }
 
+    function test_mockERC20_transfer_zeroAmount() public {
+        MockERC20 token = new MockERC20("T", "T", 18);
+
+        token.mint(address(this), 100);
+
+        bool ok = token.transfer(address(0xA), 0);
+
+        assertTrue(ok);
+        assertEq(token.balanceOf(address(this)), 100);
+        assertEq(token.balanceOf(address(0xA)), 0);
+    }
+
+    function test_mockERC20_transfer_exactBalance() public {
+        MockERC20 token = new MockERC20("T", "T", 18);
+
+        token.mint(address(this), 100);
+
+        token.transfer(address(0xA), 100);
+
+        assertEq(token.balanceOf(address(this)), 0);
+        assertEq(token.balanceOf(address(0xA)), 100);
+    }
+
     function test_mockERC20_transfer_revertsIfInsufficientBalance() public {
         MockERC20 token = new MockERC20("T", "T", 18);
         token.mint(address(this), 100);
@@ -346,6 +369,34 @@ contract DeployAllTest is Test {
         // FIX 3: custom error selector, not string revert.
         vm.expectRevert(MockERC20.ERC20__InsufficientBalance.selector);
         token.transferFrom(address(0xA), address(0xB), 101);
+    }
+
+    function test_mockERC20_transferFrom_zeroAmount() public {
+        MockERC20 token = new MockERC20("T", "T", 18);
+
+        token.mint(address(0xA), 100);
+
+        vm.prank(address(0xA));
+        token.approve(address(this), 100);
+
+        bool ok = token.transferFrom(address(0xA), address(0xB), 0);
+
+        assertTrue(ok);
+        assertEq(token.balanceOf(address(0xA)), 100);
+        assertEq(token.balanceOf(address(0xB)), 0);
+    }
+
+    function test_mockERC20_transferFrom_exactAllowance() public {
+        MockERC20 token = new MockERC20("T", "T", 18);
+
+        token.mint(address(0xA), 100);
+
+        vm.prank(address(0xA));
+        token.approve(address(this), 100);
+
+        token.transferFrom(address(0xA), address(0xB), 100);
+
+        assertEq(token.allowance(address(0xA), address(this)), 0);
     }
 
     function test_mockERC20_transferFrom_revertsIfInsufficientAllowance() public {
@@ -550,6 +601,24 @@ contract DeployAllTest is Test {
         assertTrue(positionManager.mintCalled());
     }
 
+    function test_positionManager_storesMintParamsPersistently() public {
+        _deploy();
+
+        MockPositionManager.MintParams memory p = positionManager.getLastMintParams();
+
+        assertEq(positionManager.getLastMintParams().deadline, p.deadline);
+    }
+
+    function test_positionManager_receivesLiquidityTokens() public {
+        _deploy();
+
+        MockPositionManager.MintParams memory p = positionManager.getLastMintParams();
+
+        assertEq(MockERC20(p.token0).balanceOf(address(positionManager)), p.amount0Desired);
+
+        assertEq(MockERC20(p.token1).balanceOf(address(positionManager)), p.amount1Desired);
+    }
+
     // =========================================================================
     // Step 9: Pool registration in IntentRegistry
     // =========================================================================
@@ -665,4 +734,70 @@ contract DeployAllTest is Test {
     // =========================================================================
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Approval(address indexed owner, address indexed spender, uint256 amount);
+
+    // =========================================================================
+    // deployAgain function tests
+    // =========================================================================
+
+    function test_helper_deployAgain_keepsSameRegistry() public {
+        _deploy();
+
+        address registry1 = address(helper.registry());
+
+        vm.startPrank(DEPLOYER);
+        helper.deployAgain(address(factory), address(positionManager), DEPLOYER);
+        vm.stopPrank();
+
+        assertEq(address(helper.registry()), registry1);
+    }
+
+    function test_helper_deployAgain_keepsSameTokens() public {
+        _deploy();
+
+        address weth1 = address(helper.mockWeth());
+        address usdc1 = address(helper.mockUsdc());
+
+        vm.startPrank(DEPLOYER);
+        helper.deployAgain(address(factory), address(positionManager), DEPLOYER);
+        vm.stopPrank();
+
+        assertEq(address(helper.mockWeth()), weth1);
+        assertEq(address(helper.mockUsdc()), usdc1);
+    }
+
+    // =========================================================================
+    // More tests
+    // =========================================================================
+
+    function test_deploy_liquidityReducesHelperBalances() public {
+        _deploy();
+
+        assertEq(
+            helper.mockWeth().balanceOf(address(helper)), helper.MINT_AMOUNT_WETH() - helper.LIQUIDITY_AMOUNT_WETH()
+        );
+
+        assertEq(
+            helper.mockUsdc().balanceOf(address(helper)), helper.MINT_AMOUNT_USDC() - helper.LIQUIDITY_AMOUNT_USDC()
+        );
+    }
+
+    function test_deploy_factoryPoolSymmetry() public {
+        _deploy();
+
+        address a = factory.getPool(address(helper.mockWeth()), address(helper.mockUsdc()), 3000);
+
+        address b = factory.getPool(address(helper.mockUsdc()), address(helper.mockWeth()), 3000);
+
+        assertEq(a, b);
+    }
+
+    function test_registryPoolSymmetryAfterDeploy() public {
+        _deploy();
+
+        address a = helper.registry().tokenPairPool(address(helper.mockWeth()), address(helper.mockUsdc()));
+
+        address b = helper.registry().tokenPairPool(address(helper.mockUsdc()), address(helper.mockWeth()));
+
+        assertEq(a, b);
+    }
 }

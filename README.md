@@ -184,7 +184,7 @@ sequenceDiagram
 
 | Contract           | Address (Arbitrum Sepolia)                   | Purpose                                       | Status      |
 | ------------------ | -------------------------------------------- | --------------------------------------------- | ----------- |
-| IntentRegistry     | `0x28d9962792169f9dEC7FA9fcd0Ef348954553f06` | Commit-reveal, execution gating, fund custody | ✅ Deployed |
+| IntentRegistry     | `0xa8A54c94587627cf4030e1Bf6C812B8dB791059A` | Commit-reveal, execution gating, fund custody | ✅ Deployed |
 | MockERC20 (TokenA) | `0x121872eFfbcEDdD41d1E9Ae25Dcf16dc0C8b6650` | Demo token for testnet                        | ✅ Deployed |
 | MockERC20 (TokenB) | `0xB8101132fa8a75d996476327EF56F5e5d7be40A0` | Demo token for testnet                        | ✅ Deployed |
 
@@ -352,7 +352,6 @@ Polls PostgreSQL every 15 seconds for `READY` intents (revealed + deposited + no
 │   └── DeployIntentRegistry.s.sol
 ├── test/
 │   ├── unit/
-│   │   ├── CoverageGapTest.t.sol      ← tests added to cover previously uncovered lines/branches
 │   │   ├── DeployAllTest.t.sol
 │   │   ├── DeployIntentRegistryTest.t.sol
 │   │   ├── IntentRegistryBase.sol
@@ -361,6 +360,8 @@ Polls PostgreSQL every 15 seconds for `READY` intents (revealed + deposited + no
 │   │   ├── Mocks.sol              ← MockERC20, MockRouter, HarnessIntentRegistry
 │   │   ├── MockUniswapV3PoolTest.t.sol
 │   │   ├── OracleBranchesTest.t.sol
+│   │   ├── DeployMockRouter.t.sol
+│   │   ├── RedeployRegistry.t.sol
 │   │   └── OracleLibraryTest.t.sol
 │   ├── fuzz/
 │   │   └── IntentRegistryFuzzTest.t.sol
@@ -480,7 +481,7 @@ API will be available at `http://localhost:3001`.
 
 ## Testing
 
-The full test suite is written in Foundry and covers **229 tests** across unit, fuzz, invariant, branch-coverage, and mock validation categories.
+The full test suite is written in Foundry and covers **202 tests** across unit, fuzz, invariant, branch-coverage, and mock validation categories.
 
 ```bash
 # Run all tests
@@ -515,7 +516,6 @@ All tests use Foundry. The `HarnessIntentRegistry` subclass in `test/unit/Mocks.
 | `OracleBranchesTest.t.sol`          | Branch                  | 13    | Uncovered branches in `getQuoteAtTick`, `getBlockStartingTickAndLiquidity`, `getOldestObservationSecondsAgo` |
 | `DeployAllTest.t.sol`               | Unit                    | 42    | All 9 deployment steps + MockERC20 + end-to-end flow                                                         |
 | `DeployIntentRegistryTest.t.sol`    | Unit                    | 3     | `DeployIntentRegistry.s.sol` deploy helper                                                                   |
-| `CoverageGapTest.t.sol`             | Unit                    | 27    | Coverage gaps in unit tests                                                                                  |
 | `MockUniswapV3PoolTest.t.sol`       | Unit + Fuzz + Invariant | 11    | Mock pool correctness and internal state consistency                                                         |
 
 ---
@@ -867,8 +867,10 @@ A: `targetPrice` is expressed as `getQuoteAtTick(tick, amountIn, tokenIn, tokenO
 
 ## Team
 
-- **Khushi Barnwal** — Smart Contract Engineering & Backend
-- **Nayab Khan** — Frontend Engineering & Product Experience
+- **Khushi Barnwal** — Smart Contract Engineering & Backend \
+  GitHub: [Khushi Barnwal](https://github.com/1khushibarnwal)
+- **Nayab Khan** — Frontend Engineering & Product Experience \
+  GitHub: [Nayab Khan](https://github.com/Lekhak666)
 
 ---
 
@@ -877,8 +879,8 @@ A: `targetPrice` is expressed as `getQuoteAtTick(tick, amountIn, tokenIn, tokenO
 Contributions are welcome. Please open an issue before submitting a PR for non-trivial changes.
 
 ```bash
-git clone https://github.com/[PLACEHOLDER_GITHUB_USERNAME]/[PROJECT_NAME].git
-cd [PROJECT_NAME]
+git clone https://github.com/1khushibarnwal/VeilSwap
+cd VeilSwap
 forge install
 forge build
 forge test
@@ -888,14 +890,14 @@ forge test
 
 ## Contact
 
-- **GitHub:** [PLACEHOLDER]
-- **Issues:** [PLACEHOLDER — link to issues]
+- **GitHub:**
+- **Issues:**
 
 ---
 
 ## License
 
-MIT License — see [LICENSE](./LICENSE)
+MIT License
 
 ---
 
