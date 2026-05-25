@@ -308,11 +308,19 @@ export async function startIndexer(): Promise<void> {
     try {
       logger.debug("Indexer poll: fetching latest block...");
 
-      const latestBlock = await withTimeout(
+      logger.info("Indexer poll: fetching latest block...");
+      const latestBlock = await Promise.race([
         publicClient.getBlockNumber(),
-        RPC_TIMEOUT_MS,
-        "getBlockNumber",
-      );
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error("getBlockNumber timed out")),
+            10_000,
+          ),
+        ),
+      ]);
+      logger.info("Indexer poll: latest block fetched", {
+        latestBlock: latestBlock.toString(),
+      });
 
       logger.debug("Indexer poll: latest block fetched", {
         latestBlock: latestBlock.toString(),

@@ -1,7 +1,7 @@
 // src/utils/client.ts
 import { createPublicClient, createWalletClient, http, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { arbitrumSepolia } from "viem/chains"; // ← was `arbitrum` (mainnet!) — fixed
+import { arbitrumSepolia } from "viem/chains";
 
 // ── ABI: only the events and functions the backend needs ─────────────────────
 export const INTENT_REGISTRY_ABI = parseAbi([

@@ -1,6 +1,7 @@
-<img width="25" height="25" alt="image" src="https://github.com/user-attachments/assets/c15dec63-ba1c-41fb-a061-db55a83b1449" />
-
-# Veil Swap
+<h1 align="left">
+  <img src="https://github.com/user-attachments/assets/c15dec63-ba1c-41fb-a061-db55a83b1449" width="35" style="vertical-align: middle; margin-right: 10px;" />
+  Veil Swap
+</h1>
 
 **MEV-Resistant Intent-Based Trading Protocol on Arbitrum**
 
@@ -399,8 +400,8 @@ Polls PostgreSQL every 15 seconds for `READY` intents (revealed + deposited + no
 ### Clone
 
 ```bash
-git clone https://github.com/[PLACEHOLDER_GITHUB_USERNAME]/[PROJECT_NAME].git
-cd [PROJECT_NAME]
+git clone https://github.com/1khushibarnwal/VeilSwap/
+cd VeilSwap
 ```
 
 ### Smart Contracts
@@ -479,7 +480,7 @@ API will be available at `http://localhost:3001`.
 
 ## Testing
 
-The full test suite is written in Foundry and covers **202 tests** across unit, fuzz, invariant, branch-coverage, and mock validation categories.
+The full test suite is written in Foundry and covers **229 tests** across unit, fuzz, invariant, branch-coverage, and mock validation categories.
 
 ```bash
 # Run all tests
