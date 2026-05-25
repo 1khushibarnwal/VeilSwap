@@ -252,18 +252,18 @@ contract DeployAll is Script {
         INonfungiblePositionManager(POSITION_MANAGER)
             .mint(
                 INonfungiblePositionManager.MintParams({
-                    token0: token0,
-                    token1: token1,
-                    fee: FEE,
-                    tickLower: TICK_LOWER,
-                    tickUpper: TICK_UPPER,
-                    amount0Desired: amount0Desired,
-                    amount1Desired: amount1Desired,
-                    amount0Min: 0, // no slippage protection needed on testnet
-                    amount1Min: 0,
-                    recipient: deployer,
-                    deadline: block.timestamp + 600
-                })
+                token0: token0,
+                token1: token1,
+                fee: FEE,
+                tickLower: TICK_LOWER,
+                tickUpper: TICK_UPPER,
+                amount0Desired: amount0Desired,
+                amount1Desired: amount1Desired,
+                amount0Min: 0, // no slippage protection needed on testnet
+                amount1Min: 0,
+                recipient: deployer,
+                deadline: block.timestamp + 600
+            })
             );
 
         console.log("Step 8/9 | Full-range liquidity added:");

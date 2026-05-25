@@ -481,7 +481,7 @@ API will be available at `http://localhost:3001`.
 
 ## Testing
 
-The full test suite is written in Foundry and covers **202 tests** across unit, fuzz, invariant, branch-coverage, and mock validation categories.
+The full test suite is written in Foundry and covers **238 tests** across unit, fuzz, invariant, branch-coverage, and mock validation categories.
 
 ```bash
 # Run all tests
@@ -506,19 +506,40 @@ All tests use Foundry. The `HarnessIntentRegistry` subclass in `test/unit/Mocks.
 
 ### File Overview
 
-| File                                | Category                | Tests | What it covers                                                                                               |
-| ----------------------------------- | ----------------------- | ----- | ------------------------------------------------------------------------------------------------------------ |
-| `IntentRegistryTest.t.sol`          | Unit                    | 53    | Full lifecycle of `IntentRegistry`                                                                           |
-| `IntentRegistryBranchesTest.t.sol`  | Branch                  | 6     | Structurally hard-to-reach branches                                                                          |
-| `IntentRegistryFuzzTest.t.sol`      | Fuzz                    | 14    | Property-based invariants on inputs                                                                          |
-| `IntentRegistryInvariantTest.t.sol` | Invariant               | 8     | Global state invariants over random action sequences                                                         |
-| `OracleLibraryTest.t.sol`           | Unit + Fuzz             | 52    | All 6 OracleLibrary functions across 7 test suites                                                           |
-| `OracleBranchesTest.t.sol`          | Branch                  | 13    | Uncovered branches in `getQuoteAtTick`, `getBlockStartingTickAndLiquidity`, `getOldestObservationSecondsAgo` |
-| `DeployAllTest.t.sol`               | Unit                    | 42    | All 9 deployment steps + MockERC20 + end-to-end flow                                                         |
-| `DeployIntentRegistryTest.t.sol`    | Unit                    | 3     | `DeployIntentRegistry.s.sol` deploy helper                                                                   |
-| `MockUniswapV3PoolTest.t.sol`       | Unit + Fuzz + Invariant | 11    | Mock pool correctness and internal state consistency                                                         |
+| File                                | Category                | Tests | What it covers                                                                                                  |
+| ----------------------------------- | ----------------------- | ----- | --------------------------------------------------------------------------------------------------------------- |
+| `IntentRegistryTest.t.sol`          | Unit                    | 53    | Full `IntentRegistry` lifecycle: submit, reveal, deposit, execute, cancel, pool registration, events, reverts   |
+| `IntentRegistryBranchesTest.t.sol`  | Branch                  | 6     | Structurally hard-to-reach failure branches (`transfer` failures, unreachable revert paths, edge cancellations) |
+| `IntentRegistryFuzzTest.t.sol`      | Fuzz                    | 14    | Property-based validation of expiry, deposits, execution conditions, reveal integrity, refund correctness       |
+| `IntentRegistryInvariantTest.t.sol` | Invariant               | 8     | Global protocol invariants across randomized action sequences and keeper/user interleavings                     |
+| `OracleLibraryTest.t.sol`           | Unit + Fuzz             | 41    | Full coverage of all OracleLibrary functions: consult, quote, weighted mean tick, chained pricing, observations |
+| `OracleBranchesTest.t.sol`          | Branch                  | 13    | Hard-to-hit oracle branches in quote reversal, observation indexing, block tick derivation, fallback paths      |
+| `DeployAllTest.t.sol`               | Integration             | 53    | End-to-end deployment flow: token minting, pool creation/reuse, initialization, liquidity provisioning, wiring  |
+| `DeployIntentRegistryTest.t.sol`    | Unit                    | 3     | Deployment helper correctness for `DeployIntentRegistry.s.sol`                                                  |
+| `DeployMockRouter.t.sol`            | Unit + Fuzz             | 13    | Mock router deployment script execution, broadcast lifecycle, environment handling, repeatability               |
+| `RedeployRegistry.t.sol`            | Unit                    | 12    | Registry redeployment correctness, broadcast safety, env consumption, sequential execution consistency          |
+| `MockUniswapV3PoolTest.t.sol`       | Unit + Fuzz + Invariant | 11    | Mock pool state transitions, observation updates, liquidity consistency, slot0 correctness                      |
 
 ---
+
+## Test Coverage
+
+**238 tests passing** across unit, fuzz, invariant, branch, and integration suites.
+
+| Metric     | Coverage   |
+| ---------- | ---------- |
+| Lines      | **79.80%** |
+| Statements | **78.36%** |
+| Branches   | **57.14%** |
+| Functions  | **90.29%** |
+
+Includes:
+
+- Unit tests
+- Branch coverage for structurally hard-to-reach paths
+- Fuzz/property-based validation
+- Stateful invariants
+- End-to-end deployment + execution flows
 
 ### IntentRegistryTest.t.sol — 53 tests
 
