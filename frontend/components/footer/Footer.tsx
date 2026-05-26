@@ -15,7 +15,7 @@ const footerLinks = {
     "API Reference",
   ],
   Community: [
-    "Discord",
+    "LinkedIn",
     "Twitter",
     "GitHub",
   ],
