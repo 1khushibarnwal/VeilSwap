@@ -44,7 +44,7 @@ export function useProtocolEvents() {
     const unwatchSubmitted =
       client.watchContractEvent({
         address:
-          CONTRACTS.intentRegistry as `0x${string}`,
+          CONTRACTS.INTENT_REGISTRY as `0x${string}`,
 
         abi: IntentRegistryABI,
 
@@ -84,7 +84,7 @@ export function useProtocolEvents() {
     const unwatchReveal =
       client.watchContractEvent({
         address:
-          CONTRACTS.intentRegistry as `0x${string}`,
+          CONTRACTS.INTENT_REGISTRY as `0x${string}`,
 
         abi: IntentRegistryABI,
 
@@ -124,7 +124,7 @@ export function useProtocolEvents() {
     const unwatchExecuted =
       client.watchContractEvent({
         address:
-          CONTRACTS.intentRegistry as `0x${string}`,
+          CONTRACTS.INTENT_REGISTRY as `0x${string}`,
 
         abi: IntentRegistryABI,
 

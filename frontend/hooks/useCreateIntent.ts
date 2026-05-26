@@ -38,7 +38,7 @@ export function useCreateIntent() {
 
       abi: IntentRegistryABI,
 
-      functionName: "createIntent",
+      functionName: "submitIntent",
 
       args: [commitmentHash, expiry],
     });

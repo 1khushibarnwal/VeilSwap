@@ -45,7 +45,7 @@ export function useIntents() {
       const nextIntentId =
         await client.readContract({
           address:
-            CONTRACTS.intentRegistry as `0x${string}`,
+            CONTRACTS.INTENT_REGISTRY as `0x${string}`,
 
           abi: IntentRegistryABI,
 
@@ -66,7 +66,7 @@ export function useIntents() {
         const intent =
           await client.readContract({
             address:
-              CONTRACTS.intentRegistry as `0x${string}`,
+              CONTRACTS.INTENT_REGISTRY as `0x${string}`,
 
             abi: IntentRegistryABI,
 

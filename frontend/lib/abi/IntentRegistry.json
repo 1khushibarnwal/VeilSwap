@@ -336,10 +336,10 @@
             ],
             "outputs": [],
             "stateMutability": "nonpayable"
-        },
+        }, 
         {
             "type": "function",
-            "name": "createIntent",
+            "name": "submitIntent",
             "inputs": [
                 {
                     "name": "_commitmentHash",
