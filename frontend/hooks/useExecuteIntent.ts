@@ -17,7 +17,7 @@ export function useExecuteIntent() {
   ) => {
     return await writeContractAsync({
       address:
-        CONTRACTS.intentRegistry as `0x${string}`,
+        CONTRACTS.INTENT_REGISTRY as `0x${string}`,
 
       abi: IntentRegistryABI,
 

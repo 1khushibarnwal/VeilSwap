@@ -12,32 +12,24 @@ export function useRevealIntent() {
     isPending,
   } = useWriteContract();
 
-  const revealIntent = async ({
-    intentId,
-    tokenIn,
-    tokenOut,
-    amountIn,
-    targetPrice,
-    minAmountOut,
-    greaterThan,
-    secret,
-  }: {
-    intentId: bigint;
-    tokenIn: `0x${string}`;
-    tokenOut: `0x${string}`;
-    amountIn: bigint;
-    targetPrice: bigint;
-    minAmountOut: bigint;
-    greaterThan: boolean;
-    secret: `0x${string}`;
-  }) => {
+  async function revealIntent(
+    intentId: bigint,
+    tokenIn: `0x${string}`,
+    tokenOut: `0x${string}`,
+    amountIn: bigint,
+    targetPrice: bigint,
+    minAmountOut: bigint,
+    greaterThan: boolean,
+    secret: `0x${string}`
+  ) {
     return await writeContractAsync({
       address:
-        CONTRACTS.intentRegistry as `0x${string}`,
+        CONTRACTS.INTENT_REGISTRY as `0x${string}`,
 
       abi: IntentRegistryABI,
 
-      functionName: "revealIntent",
+      functionName:
+        "revealIntent",
 
       args: [
         intentId,
@@ -50,7 +42,7 @@ export function useRevealIntent() {
         secret,
       ],
     });
-  };
+  }
 
   return {
     revealIntent,
