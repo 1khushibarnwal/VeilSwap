@@ -4,13 +4,29 @@ import Image from "next/image";
 import ConnectWallet from "@/components/ConnectWallet";
 import { motion } from "framer-motion";
 import { IconSun } from "@tabler/icons-react";
+import Link from "next/link";
 
 const navItems = [
-  "Dashboard",
-  "Intents",
-  "Portfolio",
-  "Docs",
-  "About",
+  {
+    name: "Dashboard",
+    href: "/",
+  },
+  {
+    name: "Intents",
+    href: "/intents",
+  },
+  {
+    name: "Portfolio",
+    href: "/portfolio",
+  },
+  {
+    name: "Docs",
+    href: "/docs",
+  },
+  {
+    name: "About",
+    href: "/about",
+  },
 ];
 
 export default function Navbar() {
@@ -26,7 +42,7 @@ export default function Navbar() {
         >
           <Image
             src="/veilswap.png"
-            alt="Veil Swap"
+            alt="VeilSwap"
             width={48}
             height={48}
             loading="eager"
@@ -35,7 +51,7 @@ export default function Navbar() {
 
           <div>
             <h1 className="text-2xl font-bold">
-              Veil Swap
+              VeilSwap
             </h1>
           </div>
         </motion.div>
@@ -43,16 +59,17 @@ export default function Navbar() {
         {/* Center */}
         <div className="hidden md:flex items-center gap-3">
           {navItems.map((item, index) => (
-            <button
+            <Link
               key={index}
-              className={`px-5 py-2 rounded-2xl transition-all ${
+              href={item.href}
+              className={`px-5 py-2 rounded-2xl transition-all cursor-pointer ${
                 index === 0
                   ? "glass glow-cyan"
                   : "hover:bg-white/5"
               }`}
             >
-              {item}
-            </button>
+              {item.name}
+            </Link>
           ))}
         </div>
 
