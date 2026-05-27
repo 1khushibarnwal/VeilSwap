@@ -15,16 +15,20 @@ export default function DashboardPage() {
     <main className="min-h-screen pb-10">
       <Navbar />
 
+      {/* HERO FIRST */}
       <Hero />
 
-      <StatsGrid />
+      {/* INTENTS */}
+      <section
+        id="intents"
+        className="max-w-7xl mx-auto px-6 mt-24"
+      >
+        <StatsGrid />
 
-      {/* Intent Panels */}
-      <section className="max-w-7xl mx-auto px-6 mt-8">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
           <div className="space-y-6">
-          <CreateIntentPanel />
-          <RevealIntentPanel />
+            <CreateIntentPanel />
+            <RevealIntentPanel />
           </div>
 
           <RecentIntents />
@@ -38,6 +42,7 @@ export default function DashboardPage() {
           <SolverDashboard />
         </div>
       </section>
+
 
       <Footer />
     </main>

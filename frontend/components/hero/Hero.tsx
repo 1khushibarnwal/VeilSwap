@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { IconArrowDown } from "@tabler/icons-react";
+import Link from "next/link";
 
 export default function Hero() {
   return (
@@ -45,21 +46,50 @@ export default function Hero() {
             You get the best execution.
           </p>
 
-          <div className="mt-10 flex items-center gap-4">
-            <button className="px-8 py-4 rounded-2xl bg-cyan-400 text-black font-semibold glow-cyan hover:scale-105 transition-all">
+          <div className="mt-10 inline-flex items-center gap-6">
+            <a href="#intents">
+            <button
+              onClick={() => {
+                document
+                  .getElementById("intent-section")
+                  ?.scrollIntoView({
+                    behavior: "smooth",
+                  });
+              }}
+              className="
+                px-8 py-4
+                rounded-2xl
+                bg-cyan-400
+                text-black
+                font-semibold
+                hover:scale-105
+                transition-all
+                cursor-pointer
+              "
+            >
               Create Intent
             </button>
+            </a>
 
-            <button className="glass px-8 py-4 rounded-2xl hover:bg-white/10 transition-all">
+            <Link
+              href="/intents"
+              className="
+                glass
+                px-8 py-4
+                rounded-2xl
+                hover:bg-white/10
+                transition-all
+              "
+            >
               Explore Intents
-            </button>
+            </Link>
           </div>
 
           <div className="mt-8 inline-flex items-center gap-3 glass rounded-2xl px-5 py-3">
             <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
 
             <span className="text-white/80">
-              Network: Arbitrum Chain
+              Network: Arbitrum Sepolia
             </span>
           </div>
         </div>
@@ -68,6 +98,9 @@ export default function Hero() {
         <motion.div
           animate={{
             y: [0, -10, 0],
+          }}
+          style={{
+            pointerEvents: "none",
           }}
           transition={{
             duration: 4,
@@ -92,7 +125,25 @@ export default function Hero() {
 
       {/* Scroll */}
       <div className="flex justify-center mt-20">
-        <button className="glass p-4 rounded-full glow-cyan animate-bounce">
+        <button
+          onClick={() => {
+            document
+              .getElementById("intents")
+              ?.scrollIntoView({
+                behavior: "smooth",
+              });
+          }}
+          className="
+            glass
+            p-4
+            rounded-full
+            glow-cyan
+            animate-bounce
+            hover:scale-110
+            transition-all
+            cursor-pointer
+          "
+        >
           <IconArrowDown />
         </button>
       </div>
