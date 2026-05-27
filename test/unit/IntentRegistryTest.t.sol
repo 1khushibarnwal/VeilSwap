@@ -15,6 +15,19 @@ import {MockERC20, HarnessIntentRegistry} from "./Mocks.sol";
 //   ⬡ side-effects (state changes, events, balances)
 // ─────────────────────────────────────────────────────────────────────────────
 contract IntentRegistryUnitTest is IntentRegistryBase {
+    // Re-declare for vm.expectEmit
+    event IntentSubmitted(uint256 indexed intentId, address indexed user); // Emitted when a new intent is submitted
+
+    event IntentRevealed(uint256 indexed intentId); // Emitted when an intent is revealed
+
+    event FundsDeposited(uint256 indexed id, uint256 amount);
+
+    event IntentExecuted(uint256 indexed intentId, uint256 twapPrice); // Emitted when an intent is executed
+
+    event IntentCancelled(uint256 indexed intentId); // Emitted when an intent is cancelled
+
+    event PoolRegistered(address indexed tokenA, address indexed tokenB, address indexed pool); // Emitted when a Uniswap V3 pool is registered for a token pair
+
     // =========================================================================
     // registerPool
     // =========================================================================
@@ -36,7 +49,7 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         MockERC20 b = new MockERC20("B", "B");
 
         vm.expectEmit(true, true, true, false);
-        emit IntentRegistry.PoolRegistered(address(a), address(b), newPool);
+        emit PoolRegistered(address(a), address(b), newPool);
         registry.registerPool(address(a), address(b), newPool);
     }
 
@@ -93,7 +106,7 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
 
     function test_submitIntent_emitsIntentSubmitted() public {
         vm.expectEmit(true, true, false, false);
-        emit IntentRegistry.IntentSubmitted(0, USER);
+        emit IntentSubmitted(0, USER);
 
         vm.prank(USER);
         registry.submitIntent(keccak256("x"), block.timestamp + 1);
@@ -151,7 +164,7 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         registry.submitIntent(hash, expiry);
 
         vm.expectEmit(true, false, false, false);
-        emit IntentRegistry.IntentRevealed(0);
+        emit IntentRevealed(0);
 
         vm.prank(USER);
         registry.revealIntent(
@@ -345,7 +358,7 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         _submitAndReveal(USER, AMOUNT_IN, TARGET_PRICE, MIN_AMOUNT_OUT, true, expiry, SECRET);
 
         vm.expectEmit(true, false, false, true);
-        emit IntentRegistry.FundsDeposited(0, AMOUNT_IN);
+        emit FundsDeposited(0, AMOUNT_IN);
 
         vm.prank(USER);
         registry.depositIntentFunds(0);
@@ -570,7 +583,7 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         uint256 mockPrice = TARGET_PRICE + 500e18;
 
         vm.expectEmit(true, false, false, true);
-        emit IntentRegistry.IntentExecuted(id, mockPrice);
+        emit IntentExecuted(id, mockPrice);
 
         vm.prank(KEEPER);
         registry.executeIntentWithMockPrice(id, mockPrice);
@@ -636,7 +649,7 @@ contract IntentRegistryUnitTest is IntentRegistryBase {
         vm.warp(expiry + 1);
 
         vm.expectEmit(true, false, false, false);
-        emit IntentRegistry.IntentCancelled(id);
+        emit IntentCancelled(id);
 
         vm.prank(USER);
         registry.cancelIntent(id);
