@@ -329,8 +329,8 @@ Polls PostgreSQL every 15 seconds for `READY` intents (revealed + deposited + no
 ---
 
 ## Frontend
+<img width="1728" height="835" alt="image" src="https://github.com/user-attachments/assets/ed38ab2a-02a4-411d-a556-c815fecc83f2" />
 
-> 🖼️ **[PLACEHOLDER — Frontend screenshots will be added here]**
 
 **Stack:** `[PLACEHOLDER — e.g. Next.js · TypeScript · Tailwind · wagmi · RainbowKit]`  
 **Live App:** `[PLACEHOLDER — deployment URL]`
