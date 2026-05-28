@@ -300,7 +300,7 @@ contract IntentRegistry {
 
         // Get the TWAP price from the registered Uniswap V3 pool for the token pair.
         address pool = tokenPairPool[intent.tokenIn][intent.tokenOut];
-        if (pool == address(0)) revert IntentRegistry__PoolNotRegistered();
+         if (pool== address(0)) revert IntentRegistry__PoolNotRegistered();
 
         // consult() returns the time-weighted average tick over TWAP_INTERVAL seconds.
         (int24 arithmeticMeanTick,) = OracleLibrary.consult(pool, TWAP_INTERVAL);
