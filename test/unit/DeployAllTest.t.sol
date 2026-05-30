@@ -9,6 +9,8 @@ import {MockERC20} from "../../script/DeployAll.s.sol";
 // MockUniswapV3Pool
 // ─────────────────────────────────────────────────────────────────────────────
 contract MockUniswapV3Pool {
+    error MockUniswapV3Pool__AlreadyInitialized();
+
     address public token0;
     address public token1;
     bool public initialized;
@@ -28,7 +30,10 @@ contract MockUniswapV3Pool {
     )
         external
     {
-        require(!initialized, "Already initialized");
+        if (initialized) {
+            revert MockUniswapV3Pool__AlreadyInitialized();
+        }
+
         initialized = true;
     }
 }
@@ -37,6 +42,8 @@ contract MockUniswapV3Pool {
 // MockUniswapV3Factory
 // ─────────────────────────────────────────────────────────────────────────────
 contract MockUniswapV3Factory {
+    error MockUniswapV3Factory__PoolAlreadyExists();
+
     mapping(address => mapping(address => mapping(uint24 => address))) public pools;
 
     function setPool(address a, address b, uint24 fee, address pool) external {
@@ -49,7 +56,10 @@ contract MockUniswapV3Factory {
     }
 
     function createPool(address a, address b, uint24 fee) external returns (address pool) {
-        require(pools[a][b][fee] == address(0), "Pool already exists");
+        if (pools[a][b][fee] != address(0)) {
+            revert MockUniswapV3Factory__PoolAlreadyExists();
+        }
+
         pool = address(new MockUniswapV3Pool(a, b));
         pools[a][b][fee] = pool;
         pools[b][a][fee] = pool;
@@ -210,12 +220,15 @@ contract DeployAllHelper {
 // DeployAllTest
 // ─────────────────────────────────────────────────────────────────────────────
 contract DeployAllTest is Test {
-    DeployAllHelper helper;
-    MockUniswapV3Factory factory;
-    MockPositionManager positionManager;
+    error DeployAllTest__TransferFailed();
+    error DeployAllTest__TransferFromFailed();
 
-    address constant SWAP_ROUTER = address(0xBEEF);
-    address constant DEPLOYER = address(0xD1);
+    DeployAllHelper internal helper;
+    MockUniswapV3Factory internal factory;
+    MockPositionManager internal positionManager;
+
+    address internal constant SWAP_ROUTER = address(0xBEEF);
+    address internal constant DEPLOYER = address(0xD1);
 
     function setUp() public {
         factory = new MockUniswapV3Factory();
@@ -330,7 +343,10 @@ contract DeployAllTest is Test {
 
         token.mint(address(this), 100);
 
-        token.transfer(address(0xA), 100);
+        bool ok = token.transfer(address(0xA), 100);
+        if (!ok) {
+            revert DeployAllTest__TransferFailed();
+        }
 
         assertEq(token.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(0xA)), 100);
@@ -339,8 +355,6 @@ contract DeployAllTest is Test {
     function test_mockERC20_transfer_revertsIfInsufficientBalance() public {
         MockERC20 token = new MockERC20("T", "T", 18);
         token.mint(address(this), 100);
-        // FIX 3: MockERC20 uses custom errors (revert ERC20__InsufficientBalance()),
-        // NOT legacy string reverts ("ERC20: insufficient balance").
         // vm.expectRevert with a string checks the ABI-encoded string revert —
         // a custom error has a completely different encoding, so it never matches.
         // Use the .selector of the custom error instead.
@@ -366,7 +380,6 @@ contract DeployAllTest is Test {
         token.mint(address(0xA), 100);
         vm.prank(address(0xA));
         token.approve(address(this), 999);
-        // FIX 3: custom error selector, not string revert.
         vm.expectRevert(MockERC20.ERC20__InsufficientBalance.selector);
         token.transferFrom(address(0xA), address(0xB), 101);
     }
@@ -394,7 +407,10 @@ contract DeployAllTest is Test {
         vm.prank(address(0xA));
         token.approve(address(this), 100);
 
-        token.transferFrom(address(0xA), address(0xB), 100);
+        bool ok = token.transferFrom(address(0xA), address(0xB), 100);
+        if (!ok) {
+            revert DeployAllTest__TransferFromFailed();
+        }
 
         assertEq(token.allowance(address(0xA), address(this)), 0);
     }
@@ -404,7 +420,6 @@ contract DeployAllTest is Test {
         token.mint(address(0xA), 1000);
         vm.prank(address(0xA));
         token.approve(address(this), 50);
-        // FIX 3: custom error selector, not string revert.
         vm.expectRevert(MockERC20.ERC20__InsufficientAllowance.selector);
         token.transferFrom(address(0xA), address(0xB), 51);
     }
@@ -468,7 +483,7 @@ contract DeployAllTest is Test {
     }
 
     function test_deploy_reusesExistingPool_whenAlreadyDeployed() public {
-        // FIX B: The original test used a second DeployAllHelper, which deploys
+        // The original test used a second DeployAllHelper, which deploys
         // brand-new MockERC20 tokens with different addresses on every call.
         // factory.getPool(newWETH, newUSDC, fee) returns address(0) for those
         // fresh addresses, so createPool fires again — the reuse path was never
@@ -730,7 +745,6 @@ contract DeployAllTest is Test {
     // Event declarations — must match MockERC20's emitted event signatures
     // exactly (same name + same param types) so vm.expectEmit's topic0
     // comparison succeeds.
-    // FIX 2: renamed from MockERC20Transfer/MockERC20Approval → Transfer/Approval.
     // =========================================================================
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Approval(address indexed owner, address indexed spender, uint256 amount);
