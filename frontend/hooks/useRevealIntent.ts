@@ -41,6 +41,9 @@ export function useRevealIntent() {
         greaterThan,
         secret,
       ],
+
+      maxFeePerGas: BigInt(50000000),
+      maxPriorityFeePerGas: BigInt(2000000),
     });
   }
 
