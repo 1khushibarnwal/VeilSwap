@@ -359,7 +359,10 @@ contract DeployAllTest is Test {
         // a custom error has a completely different encoding, so it never matches.
         // Use the .selector of the custom error instead.
         vm.expectRevert(MockERC20.ERC20__InsufficientBalance.selector);
-        token.transfer(address(0xA), 101);
+        bool ok = token.transfer(address(0xA), 101);
+        if (!ok) {
+            revert DeployAllTest__TransferFailed();
+        }
     }
 
     function test_mockERC20_transferFrom_movesBalanceAndDeductsAllowance() public {
@@ -381,7 +384,10 @@ contract DeployAllTest is Test {
         vm.prank(address(0xA));
         token.approve(address(this), 999);
         vm.expectRevert(MockERC20.ERC20__InsufficientBalance.selector);
-        token.transferFrom(address(0xA), address(0xB), 101);
+        bool ok = token.transferFrom(address(0xA), address(0xB), 101);
+        if (!ok) {
+            revert DeployAllTest__TransferFromFailed();
+        }
     }
 
     function test_mockERC20_transferFrom_zeroAmount() public {
@@ -421,7 +427,10 @@ contract DeployAllTest is Test {
         vm.prank(address(0xA));
         token.approve(address(this), 50);
         vm.expectRevert(MockERC20.ERC20__InsufficientAllowance.selector);
-        token.transferFrom(address(0xA), address(0xB), 51);
+        bool ok = token.transferFrom(address(0xA), address(0xB), 51);
+        if (!ok) {
+            revert DeployAllTest__TransferFromFailed();
+        }
     }
 
     // =========================================================================

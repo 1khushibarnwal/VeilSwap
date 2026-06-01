@@ -31,8 +31,8 @@ export const networks = [
 export const metadata = {
   name: "Veil Swap",
   description: "Intent-based trading on Arbitrum",
-  url: "http://localhost:3001",
-  icons: ["http://localhost:3001/veilswap.png"],
+  url: "http://localhost:3000",
+  icons: ["http://localhost:3000/veilswap.png"],
 };
 
 export const wagmiAdapter =
