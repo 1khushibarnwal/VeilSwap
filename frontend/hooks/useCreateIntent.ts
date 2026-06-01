@@ -41,6 +41,9 @@ export function useCreateIntent() {
       functionName: "submitIntent",
 
       args: [commitmentHash, expiry],
+
+      maxFeePerGas: BigInt(50000000),
+      maxPriorityFeePerGas: BigInt(2000000),
     });
   }
 
