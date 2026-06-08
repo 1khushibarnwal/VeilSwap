@@ -1,3 +1,6 @@
 {
-  "/page": "app/page.js"
+  "/page": "app/page.js",
+  "/app/page": "app/app/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/api/parse-intent/route": "app/api/parse-intent/route.js"
 }
