@@ -1,0 +1,142 @@
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --ink:       #0c0e12;
+    --ink-1:     #13161c;
+    --ink-2:     #1a1e26;
+    --ink-3:     #232834;
+    --slate:     #8892a4;
+    --slate-dim: #5a6270;
+    --cream:     #f0ece4;
+    --cream-dim: #c8c4bc;
+    --amber:     #c8923a;
+    --amber-l:   #e0a84a;
+    --jade:      #3a9e7a;
+    --rose:      #c45252;
+    --border:    rgba(200,194,188,0.08);
+    --border-2:  rgba(200,194,188,0.14);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+
+  body {
+    font-family: "DM Sans", sans-serif;
+    background: var(--ink);
+    color: var(--cream);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  ::selection { background: rgba(200,146,58,0.25); color: var(--cream); }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--ink-1); }
+  ::-webkit-scrollbar-thumb { background: var(--ink-3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--slate-dim); }
+  h1,h2,h3,h4 { font-family: "Syne", sans-serif; }
+  code, pre, .font-mono { font-family: "DM Mono", monospace; }
+}
+
+@layer components {
+  .card {
+    background: var(--ink-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .card-2 {
+    background: var(--ink-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .input {
+    width: 100%;
+    background: var(--ink-2);
+    border: 1px solid var(--border-2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--cream);
+    font-family: "DM Mono", monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input:focus { border-color: var(--amber); }
+  .input::placeholder { color: var(--slate-dim); }
+  select.input { cursor: pointer; }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px;
+    background: var(--amber); color: var(--ink);
+    font-family: "Syne", sans-serif; font-size: 13px; font-weight: 600;
+    border-radius: 8px; border: none; cursor: pointer;
+    transition: background 0.15s, transform 0.1s; letter-spacing: 0.02em;
+    text-decoration: none;
+  }
+  .btn-primary:hover  { background: var(--amber-l); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px;
+    background: transparent; color: var(--cream-dim);
+    font-family: "Syne", sans-serif; font-size: 13px; font-weight: 500;
+    border-radius: 8px; border: 1px solid var(--border-2); cursor: pointer;
+    transition: background 0.15s, color 0.15s; text-decoration: none;
+  }
+  .btn-ghost:hover { background: var(--ink-2); color: var(--cream); }
+
+  .btn-danger {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px;
+    background: transparent; color: var(--rose);
+    font-family: "Syne", sans-serif; font-size: 13px; font-weight: 500;
+    border-radius: 8px; border: 1px solid rgba(196,82,82,0.3); cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-danger:hover { background: rgba(196,82,82,0.08); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 20px;
+    font-family: "DM Mono", monospace; font-size: 11px;
+    font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .badge-submitted { background: rgba(136,146,164,0.12); color: var(--slate);    border: 1px solid rgba(136,146,164,0.2); }
+  .badge-revealed  { background: rgba(200,146,58,0.12);  color: var(--amber);    border: 1px solid rgba(200,146,58,0.2);  }
+  .badge-ready     { background: rgba(200,146,58,0.18);  color: var(--amber-l);  border: 1px solid rgba(200,146,58,0.3);  }
+  .badge-executed  { background: rgba(58,158,122,0.12);  color: var(--jade);     border: 1px solid rgba(58,158,122,0.2);  }
+  .badge-cancelled { background: rgba(196,82,82,0.12);   color: var(--rose);     border: 1px solid rgba(196,82,82,0.2);   }
+  .badge-expired   { background: rgba(90,98,112,0.12);   color: var(--slate-dim);border: 1px solid rgba(90,98,112,0.2);   }
+
+  .shimmer {
+    background: linear-gradient(90deg, var(--ink-2) 25%, var(--ink-3) 50%, var(--ink-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+  .divider { height: 1px; background: var(--border); width: 100%; }
+  .addr { font-family: "DM Mono", monospace; font-size: 12px; color: var(--slate); letter-spacing: 0.02em; }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
+}
+@keyframes spin {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
