@@ -11,7 +11,6 @@
 **Solidity:** `^0.8.20` — Foundry project  
 **Test Coverage:** Unit · Fuzz · Invariant (Foundry)  
 **Audit Status:** Pre-audit  
-**Hackathon:** [Arbitrum Open House London — Online Buildathon](https://www.hackquest.io/hackathons/Arbitrum-Open-House-London-Online-Buildathon)
 
 ---
 
@@ -795,8 +794,7 @@ If slippage protection could be modified after reveal, a frontrunner could watch
 **1. Single-owner pool registry**
 
 - ⚠️ Only `CONTRACT_OWNER` can register new token pair pools
-- **Mitigation:** Governance / multisig migration planned post-hackathon
-
+- **Mitigation:** Governance / multisig migration planned for future.
 **2. No partial fills**
 
 - ⚠️ Intents execute all-or-nothing (`amountIn` in full)
@@ -815,7 +813,7 @@ If slippage protection could be modified after reveal, a frontrunner could watch
 ### Audit Status
 
 **Status:** Pre-audit  
-**Planned:** Post-hackathon  
+**Planned:** In the near future.  
 **Scope:** `IntentRegistry.sol` + `OracleLibrary.sol`
 
 ---
